@@ -23,12 +23,12 @@ public class ClientServiceImpl implements ClientService {
     @Override
     public ResponseEntity<ClientDto> getMe(String authorization) {
         String token = authorization.replace("Bearer ", "");
-        String clinetUsername = jwtUtil.extractUsername(token);
+        String clientUsername = jwtUtil.extractUsername(token);
 
         if(jwtUtil.isTokenExpired(token)) throw new NotAuthenticated();
         if(jwtUtil.isTokenInvalidated(token)) throw new NotAuthenticated();
 
-        Client client = clientRepository.findByEmail(clinetUsername).orElseThrow(NotFound::new);
+        Client client = clientRepository.findByEmail(clientUsername).orElseThrow(NotFound::new);
 
         ClientDto response = basicClientMapper.entityToDto(client);
         return ResponseEntity.ok(response);

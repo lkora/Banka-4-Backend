@@ -24,16 +24,8 @@ public record ClientDto(
         String phone,
         @Schema(description = "Address", example = "123 Main St")
         String address,
-        @Schema(description = "Username", example = "dannny")
-        String username,
-        @Schema(description = "Job position", example = "Developer")
-        String position,
-        @Schema(description = "Department", example = "IT")
-        String department,
         @Schema(description = "List of privileges", example = "[\"ADMIN\"]")
         EnumSet<Privilege> privileges,
-        @Schema(description = "Indicates if the client is active", example = "false")
-        boolean active,
         @Schema(description = "Set of accounts linked to one client",example = "[acc1,acc2,acc3]")
         Set<String> linkedAccounts
 

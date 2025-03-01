@@ -12,6 +12,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import rs.banka4.user_service.dto.ClientDto;
 import rs.banka4.user_service.dto.EmployeeResponseDto;
 import rs.banka4.user_service.service.impl.ClientServiceImpl;
 
@@ -37,7 +38,7 @@ public class ClientController {
             }
     )
     @GetMapping("/me")
-    public ResponseEntity<EmployeeResponseDto> me(Authentication auth) {
-        return null;
+    public ResponseEntity<ClientDto> me(Authentication auth) {
+        return clientService.getMe((String) auth.getCredentials());
     }
 }
