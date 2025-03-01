@@ -3,7 +3,7 @@ package rs.banka4.user_service.service.impl;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
-import rs.banka4.user_service.dto.ClientResponseDto;
+import rs.banka4.user_service.dto.ClientDto;
 import rs.banka4.user_service.exceptions.NotAuthenticated;
 import rs.banka4.user_service.exceptions.NotFound;
 import rs.banka4.user_service.mapper.BasicClientMapper;
@@ -21,7 +21,7 @@ public class ClientServiceImpl implements ClientService {
 
 
     @Override
-    public ResponseEntity<ClientResponseDto> getMe(String authorization) {
+    public ResponseEntity<ClientDto> getMe(String authorization) {
         String token = authorization.replace("Bearer ", "");
         String clinetUsername = jwtUtil.extractUsername(token);
 
@@ -30,7 +30,7 @@ public class ClientServiceImpl implements ClientService {
 
         Client client = clientRepository.findByEmail(clinetUsername).orElseThrow(NotFound::new);
 
-        ClientResponseDto response = basicClientMapper.entityToDto(client);
+        ClientDto response = basicClientMapper.entityToDto(client);
         return ResponseEntity.ok(response);
 
     }

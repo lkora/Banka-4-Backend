@@ -5,7 +5,6 @@ import rs.banka4.user_service.models.Privilege;
 
 import java.time.LocalDate;
 import java.util.EnumSet;
-import java.util.List;
 import java.util.Set;
 
 public record ClientDto(
@@ -25,10 +24,18 @@ public record ClientDto(
         String phone,
         @Schema(description = "Address", example = "123 Main St")
         String address,
+        @Schema(description = "Username", example = "dannny")
+        String username,
+        @Schema(description = "Job position", example = "Developer")
+        String position,
+        @Schema(description = "Department", example = "IT")
+        String department,
         @Schema(description = "List of privileges", example = "[\"ADMIN\"]")
         EnumSet<Privilege> privileges,
-        @Schema(description = "List of accounts associated with the client")
-        List<AccountDto> accounts
+        @Schema(description = "Indicates if the client is active", example = "false")
+        boolean active,
+        @Schema(description = "Set of accounts linked to one client",example = "[acc1,acc2,acc3]")
+        Set<String> linkedAccounts
 
 ) {
 }
