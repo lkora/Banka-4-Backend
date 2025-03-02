@@ -5,13 +5,14 @@ import rs.banka4.user_service.models.AccountType;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.UUID;
 
-@Schema(description = "DTO for creating a new account")
-public record CreateAccountDto(
+@Schema(description = "DTO for updating account details")
+public record UpdateAccountDto(
         @Schema(description = "Account number", example = "1234567890")
         String accountNumber,
 
-        @Schema(description = "Initial balance", example = "1000.00")
+        @Schema(description = "Balance", example = "1000.00")
         BigDecimal balance,
 
         @Schema(description = "Available balance", example = "800.00")
@@ -39,5 +40,9 @@ public record CreateAccountDto(
         BigDecimal dailySpending,
 
         @Schema(description = "Monthly spending", example = "200.00")
-        BigDecimal monthlySpending
+        BigDecimal monthlySpending,
+
+        @Schema(description = "Currency ID to be associated with this account", example = "11111111-2222-3333-4444-555555555555")
+        UUID currencyId
+
 ) { }

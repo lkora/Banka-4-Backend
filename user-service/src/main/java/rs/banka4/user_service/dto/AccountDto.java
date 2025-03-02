@@ -5,12 +5,11 @@ import rs.banka4.user_service.models.AccountType;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
-import java.util.UUID;
 
 @Schema(description = "DTO for account details")
 public record AccountDto(
         @Schema(description = "Account ID", example = "11111111-2222-3333-4444-555555555555")
-        UUID id,
+        String id,
         @Schema(description = "Account number", example = "1234567890")
         String accountNumber,
         @Schema(description = "Current balance", example = "1000.00")
@@ -21,7 +20,7 @@ public record AccountDto(
         BigDecimal accountMaintenance,
         @Schema(description = "Created date", example = "2023-01-01")
         LocalDate createdDate,
-        @Schema(description = "Expiration date", example = "2024-01-01")
+        @Schema(description = "Expiration date", example = "2028-01-01")
         LocalDate expirationDate,
         @Schema(description = "Active status", example = "true")
         boolean active,
@@ -30,5 +29,13 @@ public record AccountDto(
         @Schema(description = "Daily limit", example = "100.00")
         BigDecimal dailyLimit,
         @Schema(description = "Monthly limit", example = "1000.00")
-        BigDecimal monthlyLimit
+        BigDecimal monthlyLimit,
+        @Schema(description = "Currency associated with the account")
+        CurrencyDto currency,
+        @Schema(description = "Employee that created this account")
+        EmployeeDto employee,
+        @Schema(description = "Client associated with the account")
+        ClientDto client,
+        @Schema(description = "Company associated with the account")
+        CompanyDto company
 ) { }
