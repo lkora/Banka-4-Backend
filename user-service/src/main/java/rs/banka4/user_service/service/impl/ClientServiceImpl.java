@@ -6,14 +6,21 @@ import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 import rs.banka4.user_service.dto.*;
 import rs.banka4.user_service.dto.requests.CreateClientDto;
 import rs.banka4.user_service.dto.requests.UpdateClientDto;
+import rs.banka4.user_service.exceptions.IncorrectCredentials;
+import rs.banka4.user_service.exceptions.NotActivated;
 import rs.banka4.user_service.exceptions.NotAuthenticated;
 import rs.banka4.user_service.exceptions.NotFound;
 import rs.banka4.user_service.mapper.BasicClientMapper;
 import rs.banka4.user_service.models.Client;
+import rs.banka4.user_service.models.Employee;
 import rs.banka4.user_service.models.Privilege;
 import rs.banka4.user_service.repositories.ClientRepository;
 import rs.banka4.user_service.service.abstraction.ClientService;
@@ -30,7 +37,33 @@ public class ClientServiceImpl implements ClientService {
     private final ClientRepository clientRepository;
     private final BasicClientMapper basicClientMapper;
     private final JwtUtil jwtUtil;
+    private final AuthenticationManager authenticationManager;
+    private final CustomUserDetailsService userDetailsService;
 
+    @Override
+    public ResponseEntity<LoginResponseDto> login(LoginDto loginDto) {
+        CustomUserDetailsService.role = "client"; // Consider refactoring this into a more robust role management system
+
+        try {
+            authenticationManager.authenticate(
+                    new UsernamePasswordAuthenticationToken(loginDto.email(), loginDto.password())
+            );
+        } catch (BadCredentialsException e) {
+            throw new IncorrectCredentials();
+        }
+
+        Client client = clientRepository.findByEmail(loginDto.email())
+                .orElseThrow(() -> new UsernameNotFoundException(loginDto.email()));
+
+        if (client.getPassword() == null) {
+            throw new NotActivated();
+        }
+
+        String accessToken = jwtUtil.generateToken(client);
+        String refreshToken = jwtUtil.generateRefreshToken(userDetailsService.loadUserByUsername(loginDto.email()));
+
+        return ResponseEntity.ok(new LoginResponseDto(accessToken, refreshToken));
+    }
 
     @Override
     public ResponseEntity<PrivilegesDto> getPrivileges(String token) {
