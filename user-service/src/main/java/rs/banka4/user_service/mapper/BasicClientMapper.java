@@ -1,6 +1,7 @@
 package rs.banka4.user_service.mapper;
 
 import org.springframework.stereotype.Component;
+import rs.banka4.user_service.dto.AccountDto;
 import rs.banka4.user_service.dto.ClientDto;
 import rs.banka4.user_service.models.Client;
 import rs.banka4.user_service.models.Employee;
@@ -18,7 +19,7 @@ public class BasicClientMapper {
     public ClientDto entityToDto(Client client) {
         //empty for now as decided
         EnumSet<Privilege> set = EnumSet.noneOf(Privilege.class);
-        Set<String> linkedAccounts = client.getLinkedAccounts();
+        List<AccountDto> linkedAccounts = List.of(); // client.getLinkedAccounts();
         ClientDto dto = new ClientDto(
                 client.id,
                 client.firstName,
