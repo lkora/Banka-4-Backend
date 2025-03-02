@@ -33,8 +33,8 @@ public record AccountDto(
         @Schema(description = "Active status", example = "true")
         boolean active,
 
-        @Schema(description = "Type of account", example = "SAVINGS")
-        AccountType accountType,
+        @Schema(description = "Type of account", example = "CheckingPersonal")
+        AccountTypeDto accountType,
 
         @Schema(description = "Daily limit", example = "100.00")
         BigDecimal dailyLimit,
