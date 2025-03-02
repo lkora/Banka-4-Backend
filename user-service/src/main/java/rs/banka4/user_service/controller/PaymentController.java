@@ -9,6 +9,8 @@ import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
@@ -56,13 +58,15 @@ public class PaymentController {
             }
     )
     @GetMapping("/search")
-    public ResponseEntity<List<PaymentDto>> getPaymentsForClient(
+    public ResponseEntity<Page<PaymentDto>> getPaymentsForClient(
             Authentication auth,
             @RequestParam(required = false) @Parameter(description = "Payment status") PaymentStatus status,
             @RequestParam(required = false) @Parameter(description = "Payment amount") BigDecimal amount,
-            @RequestParam(required = false) @Parameter(description = "Payments on date") LocalDate date
+            @RequestParam(required = false) @Parameter(description = "Payments on date") LocalDate date,
+            @RequestParam(defaultValue = "0") @Parameter(description = "Page number") int page,
+            @RequestParam(defaultValue = "10") @Parameter(description = "Number of employees per page") int size
             ){
-        return this.paymentService.getPaymentsForClient(auth.getCredentials().toString(), status, amount, date);
+        return this.paymentService.getPaymentsForClient(auth.getCredentials().toString(), status, amount, date, PageRequest.of(page, size));
     }
 
 }
