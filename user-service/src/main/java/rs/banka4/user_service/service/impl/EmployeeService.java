@@ -2,7 +2,7 @@ package rs.banka4.user_service.service.impl;
 
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
-import rs.banka4.user_service.dto.CreateEmployeeRequest;
+import rs.banka4.user_service.dto.requests.CreateEmployeeRequest;
 import rs.banka4.user_service.exceptions.DuplicateUsername;
 import rs.banka4.user_service.models.Employee;
 import rs.banka4.user_service.repositories.EmployeeRepository;

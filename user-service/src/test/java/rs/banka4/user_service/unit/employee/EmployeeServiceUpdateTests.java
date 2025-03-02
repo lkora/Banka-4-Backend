@@ -5,7 +5,7 @@ import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
-import rs.banka4.user_service.dto.UpdateEmployeeDto;
+import rs.banka4.user_service.dto.requests.UpdateEmployeeDto;
 import rs.banka4.user_service.exceptions.DuplicateEmail;
 import rs.banka4.user_service.exceptions.DuplicateUsername;
 import rs.banka4.user_service.exceptions.UserNotFound;
