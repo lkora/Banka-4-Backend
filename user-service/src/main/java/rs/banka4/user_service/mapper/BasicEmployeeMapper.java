@@ -2,6 +2,7 @@ package rs.banka4.user_service.mapper;
 
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
+import rs.banka4.user_service.dto.EmployeeDto;
 import rs.banka4.user_service.dto.requests.CreateEmployeeDto;
 import rs.banka4.user_service.exceptions.PrivilegeDoesNotExist;
 import rs.banka4.user_service.models.Employee;
@@ -42,5 +43,22 @@ public class BasicEmployeeMapper {
         employee.setEnabled(dto.active());
         employee.setActive(dto.active());
         return employee;
+    }
+
+    public EmployeeDto toDto(Employee employee){
+        return new EmployeeDto(
+                employee.getId(),
+                employee.getFirstName(),
+                employee.getLastName(),
+                employee.getDateOfBirth(),
+                employee.getGender(),
+                employee.getEmail(),
+                employee.getPhone(),
+                employee.getAddress(),
+                employee.getUsername(),
+                employee.getPosition(),
+                employee.getDepartment(),
+                employee.isActive()
+        );
     }
 }
