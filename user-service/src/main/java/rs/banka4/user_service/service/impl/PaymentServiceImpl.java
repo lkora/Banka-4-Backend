@@ -1,9 +1,6 @@
 package rs.banka4.user_service.service.impl;
 
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageImpl;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
@@ -28,7 +25,7 @@ public class PaymentServiceImpl implements PaymentService {
     }
 
     @Override
-    public ResponseEntity<Page<PaymentDto>> getPaymentsForClient(String token, PaymentStatus aymentStatus, BigDecimal amount, LocalDate paymentDate, PageRequest pageRequest){
+    public ResponseEntity<List<PaymentDto>> getPaymentsForClient(String token, PaymentStatus aymentStatus, BigDecimal amount, LocalDate paymentDate){
         PaymentDto paymentDto = new PaymentDto(
                 "e2a1f6f3-9f74-4b8a-bc9a-2f3a5c6d7e8f",
                 "1265463698391",
@@ -58,8 +55,6 @@ public class PaymentServiceImpl implements PaymentService {
         );
 
         List<PaymentDto> payments = List.of(paymentDto, paymentDto2);
-        Page<PaymentDto> paymentPage = new PageImpl<>(payments, pageRequest, payments.size());
-
-        return ResponseEntity.ok(paymentPage);
+        return ResponseEntity.ok(payments);
     }
 }

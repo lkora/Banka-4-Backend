@@ -7,5 +7,7 @@ import java.util.List;
 import java.util.UUID;
 
 public interface AccountService {
-    ResponseEntity<List<AccountDto>> getAccountsForClient(UUID clientId);
+    ResponseEntity<List<AccountDto>> getAccountsForClient(String token);
+    ResponseEntity<List<AccountDto>> getRecentRecipientsFor(String token);
+    ResponseEntity<AccountDto> getAccount(String token, String id);
 }

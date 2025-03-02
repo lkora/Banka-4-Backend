@@ -1,4 +1,4 @@
-package rs.banka4.user_service.dto.requests;
+package rs.banka4.user_service.dto;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
