@@ -16,9 +16,9 @@ import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 import rs.banka4.user_service.dto.ClientDto;
 import rs.banka4.user_service.dto.PrivilegesDto;
-import rs.banka4.user_service.dto.UpdateClientDto;
+import rs.banka4.user_service.dto.requests.UpdateClientDto;
 import rs.banka4.user_service.service.abstraction.ClientService;
-import rs.banka4.user_service.dto.CreateClientDto;
+import rs.banka4.user_service.dto.requests.CreateClientDto;
 import java.util.List;
 import java.util.UUID;
 

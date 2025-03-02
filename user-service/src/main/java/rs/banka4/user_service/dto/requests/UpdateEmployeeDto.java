@@ -1,4 +1,4 @@
-package rs.banka4.user_service.dto;
+package rs.banka4.user_service.dto.requests;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.Email;
