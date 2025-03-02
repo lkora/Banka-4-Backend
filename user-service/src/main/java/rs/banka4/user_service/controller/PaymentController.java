@@ -29,15 +29,15 @@ public class PaymentController {
     private final PaymentService paymentService;
 
     @Operation(
-            summary = "Create a new Client",
+            summary = "Create a new Payment",
             description = "Creates a new client with the provided details and a list of account details.",
             responses = {
-                    @ApiResponse(responseCode = "201", description = "Successfully created new client"),
-                    @ApiResponse(responseCode = "400", description = "Bad request - Invalid data or duplicate email")
+                    @ApiResponse(responseCode = "201", description = "Successfully created new payment"),
+                    @ApiResponse(responseCode = "400", description = "Bad request - Invalid data")
             }
     )
     @PostMapping
-    public ResponseEntity<PaymentDto> createClient(
+    public ResponseEntity<PaymentDto> createPayment(
             @io.swagger.v3.oas.annotations.parameters.RequestBody(
                     description = "Details of the new client to create", required = true)
             @RequestBody @Valid CreatePaymentDto createPaymentDto) {
