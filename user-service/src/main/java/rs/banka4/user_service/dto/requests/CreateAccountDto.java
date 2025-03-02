@@ -9,45 +9,42 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.UUID;
 
-@Schema(description = "DTO for creating a new account")
-public record CreateAccountDto(
-        @NotBlank
-        @Schema(description = "Account number", example = "1234567890")
-        String accountNumber,
-
-        @NotNull
+@Schema(description = "Data Transfer Object representing an account")
+public record CreateAccountDto (
+        @NotNull(message = "Balance cannot be null")
         @Schema(description = "Initial balance", example = "1000.00")
         BigDecimal balance,
 
-        @NotNull
+        @NotNull(message = "Expiration date cannot be null")
         @Schema(description = "Expiration date", example = "2024-01-01")
         LocalDate expirationDate,
 
+        @NotNull(message = "Active status cannot be null")
         @Schema(description = "Active status", example = "true")
-        boolean active,
+        Boolean active,
 
-        @NotNull
+        @NotNull(message = "Account type cannot be null")
         @Schema(description = "Type of account", example = "SAVINGS")
         AccountType accountType,
 
-        @NotNull
+        @NotNull(message = "Daily limit cannot be null")
         @Schema(description = "Daily limit", example = "100.00")
         BigDecimal dailyLimit,
 
-        @NotNull
+        @NotNull(message = "Monthly limit cannot be null")
         @Schema(description = "Monthly limit", example = "1000.00")
         BigDecimal monthlyLimit,
 
-        @NotNull
+        @NotNull(message = "Daily spending cannot be null")
         @Schema(description = "Daily spending", example = "50.00")
         BigDecimal dailySpending,
 
-        @NotNull
+        @NotNull(message = "Monthly spending cannot be null")
         @Schema(description = "Monthly spending", example = "200.00")
         BigDecimal monthlySpending,
 
-        @NotNull
-        @Schema(description = "Currency ID to be associated with this account", example = "11111111-2222-3333-4444-555555555555")
+        @NotNull(message = "Currency ID cannot be null")
+        @Schema(description = "Currency ID associated with this account", example = "11111111-2222-3333-4444-555555555555")
         UUID currencyId
 
 ) { }
