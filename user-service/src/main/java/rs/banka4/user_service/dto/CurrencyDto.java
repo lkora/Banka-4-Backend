@@ -1,6 +1,7 @@
 package rs.banka4.user_service.dto;
 
 import io.swagger.v3.oas.annotations.media.Schema;
+import rs.banka4.user_service.models.Currency;
 
 import java.util.Set;
 
@@ -17,7 +18,7 @@ public record CurrencyDto(
         @Schema(description = "Active status", example = "true")
         boolean active,
         @Schema(description = "Currency code", example = "RSD")
-        CurrencyCode code,
+        Currency.Code code,
         @Schema(description = "Countries using this currency", example = "[\"Serbia\", \"Bosnia\"]")
         Set<String> countries
 

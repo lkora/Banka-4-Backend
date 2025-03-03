@@ -17,6 +17,7 @@ import java.util.Set;
 public class BasicClientMapper {
 
     public ClientDto entityToDto(Client client) {
+        if (client == null) return null;
         //empty for now as decided
         EnumSet<Privilege> set = EnumSet.noneOf(Privilege.class);
         List<AccountDto> linkedAccounts = List.of(); // client.getLinkedAccounts();

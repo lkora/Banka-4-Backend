@@ -10,6 +10,7 @@ import org.springframework.stereotype.Service;
 import rs.banka4.user_service.dto.*;
 import rs.banka4.user_service.dto.requests.CreateAccountDto;
 import rs.banka4.user_service.models.AccountType;
+import rs.banka4.user_service.models.Currency;
 import rs.banka4.user_service.models.Employee;
 import rs.banka4.user_service.service.abstraction.AccountService;
 
@@ -29,7 +30,7 @@ public class AccountServiceImpl implements AccountService {
             "RSD",
             "Currency used in Serbia",
             true,
-            CurrencyCode.RSD,
+            Currency.Code.RSD,
             Set.of("Serbia", "Montenegro")
     );
 
@@ -50,7 +51,7 @@ public class AccountServiceImpl implements AccountService {
             LocalDate.of(2023, 1, 1),
             LocalDate.of(2028, 1, 1),
             true,
-            AccountType.SAVINGS,
+            AccountTypeDto.CheckingBusiness,
             new BigDecimal("100.00"),
             new BigDecimal("1000.00"),
             currencyDto,
@@ -68,7 +69,7 @@ public class AccountServiceImpl implements AccountService {
             LocalDate.of(2022, 6, 15),
             LocalDate.of(2027, 6, 15),
             true,
-            AccountType.AD,
+            AccountTypeDto.FxBusiness,
             new BigDecimal("200.00"),
             new BigDecimal("5000.00"),
             currencyDto,

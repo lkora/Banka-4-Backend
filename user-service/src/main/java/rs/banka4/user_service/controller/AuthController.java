@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.*;
 import rs.banka4.user_service.dto.*;
 import rs.banka4.user_service.dto.requests.EmployeeVerificationRequestDto;
 import rs.banka4.user_service.service.abstraction.AuthService;
+import rs.banka4.user_service.service.abstraction.ClientService;
 import rs.banka4.user_service.service.abstraction.EmployeeService;
 @Tag(name = "AuthController", description = "Endpoints for authentication")
 @RestController
@@ -22,6 +23,7 @@ public class AuthController {
 
     private final AuthService authService;
     private final EmployeeService employeeService;
+    private final ClientService clientService;
 
     @Operation(
             summary = "Employee Login",
@@ -37,6 +39,22 @@ public class AuthController {
     public ResponseEntity<LoginResponseDto> login(@io.swagger.v3.oas.annotations.parameters.RequestBody(description = "Employee login credentials", required = true)
                                                       @RequestBody LoginDto loginDto) {
         return employeeService.login(loginDto);
+    }
+
+    @Operation(
+            summary = "Client Login",
+            description = "Allows a client to log in and receive an access token and refresh token.",
+            responses = {
+                    @ApiResponse(responseCode = "200", description = "Successful login",
+                            content = @Content(schema = @Schema(implementation = LoginDto.class))),
+                    @ApiResponse(responseCode = "400", description = "Invalid data"),
+                    @ApiResponse(responseCode = "401", description = "Incorrect credentials")
+            }
+    )
+    @PostMapping("/client/login")
+    public ResponseEntity<LoginResponseDto> clientLogin(@io.swagger.v3.oas.annotations.parameters.RequestBody(description = "Employee login credentials", required = true)
+                                                  @RequestBody LoginDto loginDto) {
+        return clientService.login(loginDto);
     }
 
     @Operation(
