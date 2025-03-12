@@ -63,4 +63,20 @@ public class CardObjectMother {
         );
     }
 
+    public static CreateCardDto validRequest() {
+        return new CreateCardDto(
+                "44400011234567890",
+                new CreateAuthorizedUserDto(
+                        "Mehmedalija",
+                        "Krupalija",
+                        LocalDate.parse("1995-05-05"),
+                        Gender.MALE,
+                        "mehmedalija@banka4.rs",
+                        "+38766111222",
+                        "Bankarska 4"
+                ),
+                "123456"
+        );
+    }
+
 }
