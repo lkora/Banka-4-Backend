@@ -1,6 +1,8 @@
 package rs.banka4.user_service.runners;
 
 import lombok.RequiredArgsConstructor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.Profile;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -9,6 +11,10 @@ import org.springframework.transaction.annotation.Isolation;
 import org.springframework.transaction.annotation.Transactional;
 import rs.banka4.user_service.domain.account.db.Account;
 import rs.banka4.user_service.domain.account.db.AccountType;
+import rs.banka4.user_service.domain.card.db.Card;
+import rs.banka4.user_service.domain.card.db.CardName;
+import rs.banka4.user_service.domain.card.db.CardStatus;
+import rs.banka4.user_service.domain.card.db.CardType;
 import rs.banka4.user_service.domain.company.db.ActivityCode;
 import rs.banka4.user_service.domain.company.db.Company;
 import rs.banka4.user_service.domain.currency.db.Currency;
@@ -23,8 +29,6 @@ import rs.banka4.user_service.domain.user.Privilege;
 import rs.banka4.user_service.domain.user.client.db.Client;
 import rs.banka4.user_service.domain.user.client.db.ClientContact;
 import rs.banka4.user_service.domain.user.employee.db.Employee;
-import rs.banka4.user_service.exceptions.account.AccountNotFound;
-import rs.banka4.user_service.exceptions.user.client.ClientNotFound;
 import rs.banka4.user_service.repositories.*;
 
 import java.math.BigDecimal;
@@ -38,6 +42,8 @@ import java.util.stream.IntStream;
 @Component
 @RequiredArgsConstructor
 public class TestDataRunner implements CommandLineRunner {
+    private static final Logger LOGGER
+            = LoggerFactory.getLogger(TestDataRunner.class);
 
     private final ClientRepository clientRepository;
     private final EmployeeRepository employeeRepository;
@@ -49,6 +55,7 @@ public class TestDataRunner implements CommandLineRunner {
     private final ClientContactRepository clientContactRepository;
     private final TransactionRepository transactionRepository;
     private final LoanRepository loanRepository;
+    private final CardRepository cardRepository;
 
     @Override
     public void run(String... args) {
@@ -61,13 +68,60 @@ public class TestDataRunner implements CommandLineRunner {
         accountSeeder();
         loanSeeder();
         transactionSeeder();
+        cardSeeder();
     }
+
+    private void cardSeeder() {
+
+        if (accountRepository.count() == 0) {
+            System.out.println("No accounts found. Skipping card seeder.");
+            return;
+        }
+
+        Account account = accountRepository.findAccountByAccountNumber("1234567890").orElse(null);
+        Client client = account.getClient();
+        Currency currency = account.getCurrency();
+        if (client == null || currency == null) {
+            System.out.println("Client or Currency not found. Skipping card seeder.");
+            return;
+        }
+        List<Card> cards = List.of(
+                Card.builder()
+                        .cardNumber("1234567810345678")
+                        .cvv("123")
+                        .cardName(CardName.VISA)
+                        .cardType(CardType.DEBIT)
+                        .account(account)
+                        .cardStatus(CardStatus.ACTIVATED)
+                        .limit(BigDecimal.valueOf(10000))
+                        .createdAt(LocalDate.now())
+                        .expiresAt(LocalDate.now().plusYears(5))
+                        .build(),
+
+                Card.builder()
+                        .cardNumber("8765432107654321")
+                        .cvv("321")
+                        .cardName(CardName.MASTER_CARD)
+                        .cardType(CardType.CREDIT)
+                        .account(account)
+                        .cardStatus(CardStatus.ACTIVATED)
+                        .limit(BigDecimal.valueOf(10000))
+                        .createdAt(LocalDate.now())
+                        .expiresAt(LocalDate.now().plusYears(5))
+                        .build()
+        );
+        List<Card> newCards = cards.stream()
+                .filter(card -> !cardRepository.existsByCardNumber(card.getCardNumber()))
+                .collect(Collectors.toList());
+        cardRepository.saveAll(newCards);
+    }
+
 
     private void loanSeeder() {
         long loanCount = loanRepository.count();
 
         if (loanCount > 10) {
-            System.out.println("Seeder skipped. There are already more than 10 loans in the database.");
+            LOGGER.debug("Seeder skipped. There are already more than 10 loans in the database.");
             return;
         }
 
