@@ -2,6 +2,7 @@ package rs.banka4.user_service.service.impl;
 
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.annotation.Primary;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
@@ -17,34 +18,31 @@ import rs.banka4.user_service.domain.card.dtos.CreateCardDto;
 import rs.banka4.user_service.domain.card.mapper.CardMapper;
 import rs.banka4.user_service.exceptions.account.AccountNotFound;
 import rs.banka4.user_service.exceptions.authenticator.NotValidTotpException;
+import rs.banka4.user_service.exceptions.card.AuthorizedUserNotAllowed;
 import rs.banka4.user_service.exceptions.card.CardLimitExceededException;
 import rs.banka4.user_service.exceptions.card.DuplicateAuthorizationException;
 import rs.banka4.user_service.exceptions.user.NotAuthenticated;
 import rs.banka4.user_service.repositories.AccountRepository;
 import rs.banka4.user_service.repositories.CardRepository;
-import rs.banka4.user_service.repositories.CardRepository;
 import rs.banka4.user_service.service.abstraction.CardService;
-import rs.banka4.user_service.utils.JwtUtil;
 import rs.banka4.user_service.utils.JwtUtil;
 
 import javax.annotation.Nullable;
-import javax.security.auth.login.AccountNotFoundException;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.Optional;
 
 @Service
+@Primary
 @RequiredArgsConstructor
 public class CardServiceImpl implements CardService {
     private final CardRepository cardRepository;
     private final AccountRepository accountRepository;
     private final TotpService totpService;
-    private final CardMapper cardMapper;
     private final JwtUtil jwtUtil;
 
 
     @Transactional
-    public Card createAuthorizedCard(Authentication auth,
-                                     CreateCardDto dto) {
+    public void createAuthorizedCard(Authentication auth, CreateCardDto dto) {
         if (!totpService.validate(auth.getCredentials().toString(), dto.otpCode())) {
             throw new NotValidTotpException();
         }
@@ -52,14 +50,13 @@ public class CardServiceImpl implements CardService {
         Account account = accountRepository.findAccountByAccountNumber(dto.accountNumber())
                 .orElseThrow(AccountNotFound::new);
 
-        validateCardLimits(account, dto.createAuthorizedUserDto());
+        validateCardLimits(account, dto.authorizedUser());
 
-        Card card = cardMapper.fromCreate(dto, account);
+        Card card = CardMapper.INSTANCE.fromCreate(dto);
         card.setCardNumber(generateUniqueCardNumber());
         card.setCvv(generateRandomCVV());
         card.setAccount(account);
-
-        return cardRepository.save(card);
+        card.setCardName(CardMapper.INSTANCE.mapCardName(account));
     }
 
     @Override
@@ -155,25 +152,34 @@ public class CardServiceImpl implements CardService {
 
     @Transactional
     public Card createEmployeeCard(CreateCardDto dto, Account account) {
-        Card card = cardMapper.fromCreate(dto, account);
+        Card card = CardMapper.INSTANCE.fromCreate(dto);
         card.setCardNumber(generateUniqueCardNumber());
         card.setCvv(generateRandomCVV());
         card.setAccount(account);
         return cardRepository.save(card);
     }
 
-    private void validateCardLimits(Account account,
-                                    @Nullable CreateAuthorizedUserDto authorizedUser) {
-        int existingCards = cardRepository.countByAccount(account);
+    private void validateCardLimits(Account account, @Nullable CreateAuthorizedUserDto authorizedUser) {
+        if (account.getAccountType().isBusiness()) {
+            int existingCards = cardRepository.countByAccount(account);
 
-        if (account.getAccountType() == AccountType.STANDARD) {
-            if (existingCards >= 2) throw new CardLimitExceededException();
-        } else {
-            if (authorizedUser == null) throw new NotAuthenticated();
-            if (cardRepository.existsByAccountAndAuthorizedUserEmail(account, authorizedUser.email())) {
-                throw new DuplicateAuthorizationException();
+            if (authorizedUser == null) {
+                if (existingCards >= 1) {
+                    throw new AuthorizedUserNotAllowed();
+                }
+            } else {
+                if (cardRepository.existsByAccountAndAuthorizedUserEmail(account, authorizedUser.email())) {
+                    throw new DuplicateAuthorizationException();
+                }
             }
-            if (existingCards >= 1) throw new CardLimitExceededException();
+        } else {
+            if (authorizedUser != null) {
+                throw new AuthorizedUserNotAllowed();
+            }
+            int existingCards = cardRepository.countByAccount(account);
+            if (existingCards >= 2) {
+                throw new CardLimitExceededException();
+            }
         }
     }
 

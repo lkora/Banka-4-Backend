@@ -11,6 +11,7 @@ import java.util.UUID;
 @Repository
 public interface CardRepository extends JpaRepository<Card, UUID> {
     int countByAccount(Account account);
+    int countByAccountAndAuthorizedUserEmail(Account account, String authorizedUserEmail);
     boolean existsByAccountAndAuthorizedUserEmail(Account account, String email);
     boolean existsByCardNumber(String cardNumber);
     Optional<Card> findCardByCardNumber(String cardNumber);

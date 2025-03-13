@@ -10,7 +10,7 @@ import rs.banka4.user_service.domain.card.dtos.CardDto;
 import rs.banka4.user_service.domain.card.dtos.CreateCardDto;
 
 public interface CardService {
-    Card createAuthorizedCard(Authentication auth, CreateCardDto createCardDto);
+    void createAuthorizedCard(Authentication auth, CreateCardDto createCardDto);
     Card blockCard(String cardNumber, String token);
     Card unblockCard(String cardNumber, String token);
     Card deactivateCard(String cardNumber, String token);
