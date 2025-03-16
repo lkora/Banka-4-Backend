@@ -6,14 +6,15 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
-import rs.banka4.user_service.domain.transaction.dtos.TransactionDto;
-import rs.banka4.user_service.domain.transaction.db.TransactionStatus;
-import rs.banka4.user_service.domain.transaction.dtos.CreatePaymentDto;
-import rs.banka4.user_service.domain.transaction.mapper.TransactionMapper;
 import rs.banka4.user_service.domain.account.db.Account;
-import rs.banka4.user_service.domain.user.client.db.Client;
 import rs.banka4.user_service.domain.transaction.db.MonetaryAmount;
 import rs.banka4.user_service.domain.transaction.db.Transaction;
+import rs.banka4.user_service.domain.transaction.db.TransactionStatus;
+import rs.banka4.user_service.domain.transaction.dtos.CreatePaymentDto;
+import rs.banka4.user_service.domain.transaction.dtos.CreateTransferDto;
+import rs.banka4.user_service.domain.transaction.dtos.TransactionDto;
+import rs.banka4.user_service.domain.transaction.mapper.TransactionMapper;
+import rs.banka4.user_service.domain.user.client.db.Client;
 import rs.banka4.user_service.domain.user.client.db.ClientContact;
 import rs.banka4.user_service.exceptions.account.AccountNotActive;
 import rs.banka4.user_service.exceptions.account.AccountNotFound;
@@ -84,33 +85,23 @@ public class TransactionServiceImpl implements TransactionService {
 
     @Override
     @Transactional
-    public TransactionDto createTransfer(Authentication authentication, CreatePaymentDto createPaymentDto) {
+    public TransactionDto createTransfer(Authentication authentication, CreateTransferDto createTransferDto) {
         Client client = getClient(authentication);
 
-        if (!veifyClient(authentication, createPaymentDto.otpCode())) {
+        if (!veifyClient(authentication, createTransferDto.otpCode())) {
             throw new NotValidTotpException();
         }
 
-        Account fromAccount = getAccount(createPaymentDto.fromAccount());
-        Account toAccount = getAccount(createPaymentDto.toAccount());
+        Account fromAccount = getAccount(createTransferDto.fromAccount());
+        Account toAccount = getAccount(createTransferDto.toAccount());
 
         validateAccountActive(fromAccount);
         validateClientAccountOwnership(client, fromAccount, toAccount);
-        validateSufficientFunds(fromAccount, createPaymentDto.fromAmount());
+        validateSufficientFunds(fromAccount, createTransferDto.fromAmount());
 
-        processTransaction(fromAccount, toAccount, createPaymentDto.fromAmount(), BigDecimal.ZERO);
+        processTransaction(fromAccount, toAccount, createTransferDto.fromAmount(), BigDecimal.ZERO);
 
-        Transaction transaction = buildTransaction(fromAccount, toAccount, createPaymentDto, BigDecimal.ZERO, TransactionStatus.REALIZED);
-
-        if (createPaymentDto.saveRecipient()) {
-            ClientContact clientContact = ClientContact.builder()
-                    .client(client)
-                    .accountNumber(toAccount.getAccountNumber())
-                    .nickname(createPaymentDto.recipient())
-                    .build();
-
-            clientContactRepository.save(clientContact);
-        }
+        Transaction transaction = buildTransfer(fromAccount, toAccount, createTransferDto, BigDecimal.ZERO, TransactionStatus.REALIZED);
 
         transactionRepository.save(transaction);
 
@@ -129,8 +120,8 @@ public class TransactionServiceImpl implements TransactionService {
             Account fromAccount = accountRepository.findAccountByAccountNumber(accountNumber)
                     .orElseThrow(AccountNotFound::new);
 
-            combinator.and(PaymentSpecification.hasFromAccount(fromAccount)); // todo we should U (UNIJA)
-            combinator.and(PaymentSpecification.hasToAccount(fromAccount));
+            combinator.or(PaymentSpecification.hasFromAccount(fromAccount));
+            combinator.or(PaymentSpecification.hasToAccount(fromAccount));
         }
 
         Page<Transaction> transactions = transactionRepository.findAll(combinator.build(), pageRequest);
@@ -200,6 +191,23 @@ public class TransactionServiceImpl implements TransactionService {
                 .paymentCode(createPaymentDto.paymentCode())
                 .referenceNumber(createPaymentDto.referenceNumber())
                 .paymentPurpose(createPaymentDto.paymentPurpose())
+                .paymentDateTime(LocalDateTime.now())
+                .status(status)
+                .build();
+    }
+
+    private Transaction buildTransfer(Account fromAccount, Account toAccount, CreateTransferDto createTransferDto, BigDecimal fee, TransactionStatus status) {
+        return Transaction.builder()
+                .transactionNumber(UUID.randomUUID().toString())
+                .fromAccount(fromAccount)
+                .toAccount(toAccount)
+                .from(new MonetaryAmount(createTransferDto.fromAmount(), fromAccount.getCurrency()))
+                .to(new MonetaryAmount(createTransferDto.fromAmount(), toAccount.getCurrency()))
+                .fee(new MonetaryAmount(fee, fromAccount.getCurrency()))
+                .recipient(toAccount.getClient().firstName)
+                .paymentCode("101")
+                .referenceNumber(String.valueOf(toAccount.getClient().getId()))
+                .paymentPurpose("Internal")
                 .paymentDateTime(LocalDateTime.now())
                 .status(status)
                 .build();

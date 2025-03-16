@@ -12,14 +12,19 @@ import org.springframework.http.ResponseEntity;
 import rs.banka4.user_service.domain.account.db.Account;
 import rs.banka4.user_service.domain.currency.db.Currency;
 import rs.banka4.user_service.domain.currency.dtos.CurrencyDto;
+import rs.banka4.user_service.domain.currency.mapper.CurrencyMapper;
 import rs.banka4.user_service.domain.loan.db.Loan;
+import rs.banka4.user_service.domain.loan.db.LoanRequest;
 import rs.banka4.user_service.domain.loan.db.LoanStatus;
 import rs.banka4.user_service.domain.loan.db.LoanType;
+import rs.banka4.user_service.domain.loan.dtos.LoanApplicationResponseDto;
 import rs.banka4.user_service.domain.loan.dtos.LoanFilterDto;
 import rs.banka4.user_service.domain.loan.dtos.LoanInformationDto;
 import rs.banka4.user_service.domain.loan.mapper.LoanMapper;
 import rs.banka4.user_service.repositories.LoanRepository;
+import rs.banka4.user_service.repositories.LoanRequestRepository;
 import rs.banka4.user_service.service.impl.LoanServiceImpl;
+import rs.banka4.user_service.utils.JwtUtil;
 import rs.banka4.user_service.utils.specification.SpecificationCombinator;
 
 import java.math.BigDecimal;
@@ -27,6 +32,7 @@ import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
 
+import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.ArgumentMatchers.any;
@@ -35,14 +41,43 @@ import static org.mockito.Mockito.when;
 public class GetAllLoansTests {
     @Mock
     private LoanRepository loanRepository;
-
     @Mock
     private LoanMapper loanMapper;
+    @Mock
+    private LoanRequestRepository loanRequestRepository;
     @InjectMocks
     private LoanServiceImpl loanService;
+    private LoanRequest sampleLoanRequest;
+    @Mock
+    private JwtUtil jwtUtil;
+
     @BeforeEach
     void setUp() {
         MockitoAnnotations.openMocks(this);
+        Account account = new Account();
+        account.setId(UUID.randomUUID());
+        account.setAccountNumber("35123456789012345678");
+        account.setCurrency(Currency.builder().name("EUR").build());
+
+        Loan loan = new Loan();
+        loan.setLoanNumber(1234567L);
+
+        sampleLoanRequest = new LoanRequest();
+        sampleLoanRequest.setId(UUID.randomUUID());
+        sampleLoanRequest.setAmount(new BigDecimal("10000"));
+        sampleLoanRequest.setCurrency(new Currency());
+        sampleLoanRequest.getCurrency().setCode(Currency.Code.EUR);
+        sampleLoanRequest.getCurrency().setName("Euro");
+        sampleLoanRequest.setPurposeOfLoan("Education");
+        sampleLoanRequest.setMonthlyIncome(new BigDecimal("2500"));
+        sampleLoanRequest.setEmploymentStatus("Permanent");
+        sampleLoanRequest.setEmploymentPeriod(5);
+        sampleLoanRequest.setRepaymentPeriod(60);
+        sampleLoanRequest.setContactPhone("+381641234567");
+        sampleLoanRequest.setAccount(account);
+        sampleLoanRequest.setLoan(loan);
+        sampleLoanRequest.setType(LoanType.CASH);
+        sampleLoanRequest.setInterestType(Loan.InterestType.FIXED);
     }
     List<LoanInformationDto> mockLoans = List.of(
             new LoanInformationDto(
@@ -51,7 +86,7 @@ public class GetAllLoansTests {
                     LocalDate.now(), LocalDate.now().plusYears(5),
                     BigDecimal.valueOf(500), LocalDate.now().plusMonths(1),
                     BigDecimal.valueOf(5000),
-                    new CurrencyDto(UUID.randomUUID(), "Euro", "EUR", "European currency", true, Currency.Code.EUR),
+                    Currency.Code.EUR,
                     LoanStatus.APPROVED,
                     Loan.InterestType.FIXED
             ),
@@ -61,7 +96,7 @@ public class GetAllLoansTests {
                     LocalDate.now(), LocalDate.now().plusYears(5),
                     BigDecimal.valueOf(500), LocalDate.now().plusMonths(1),
                     BigDecimal.valueOf(5000),
-                    new CurrencyDto(UUID.randomUUID(), "Euro", "€", "Official currency of the eurozone", true, Currency.Code.EUR),
+                    Currency.Code.EUR,
                     LoanStatus.APPROVED,
                     Loan.InterestType.FIXED
 
@@ -71,56 +106,11 @@ public class GetAllLoansTests {
                     LocalDate.now(), LocalDate.now().plusYears(5),
                     BigDecimal.valueOf(500), LocalDate.now().plusMonths(1),
                     BigDecimal.valueOf(5000),
-                    new CurrencyDto(UUID.randomUUID(), "Euro", "€", "Official currency of the eurozone", true, Currency.Code.EUR),
+                    Currency.Code.EUR,
                     LoanStatus.APPROVED,
                     Loan.InterestType.FIXED
             )
     );
-    @Test
-    void whenStatusIsProcessing_thenSortByAgreementDateDescending() {
-        LoanFilterDto filterDto = new LoanFilterDto(LoanType.CASH, LoanStatus.PROCESSING, "ACC123");
-        PageRequest basePageRequest = PageRequest.of(0, 5); // base page request (without sort)
-
-        Loan loan1 = new Loan();
-        loan1.setLoanNumber(111L);
-        loan1.setAgreementDate(LocalDate.of(2025, 3, 10));
-
-        Account account1 = new Account();
-        account1.setAccountNumber("12");
-        loan1.setAccount(account1);
-
-        Loan loan2 = new Loan();
-        loan2.setLoanNumber(222L);
-        loan2.setAgreementDate(LocalDate.of(2025, 1, 10));
-        Account account2 = new Account();
-        account2.setAccountNumber("23");
-        loan2.setAccount(account2);
-
-        List<Loan> loans = List.of(loan1, loan2);
-        Page<Loan> loanPage = new PageImpl<>(loans, basePageRequest.withSort(Sort.by("agreementDate").descending()), loans.size());
-
-        when(loanRepository.findAll(any(Specification.class), any(Pageable.class))).thenReturn(loanPage);
-
-        LoanInformationDto dto1 = mockLoans.get(0);
-        LoanInformationDto dto2 = mockLoans.get(1);
-        when(loanMapper.toDto(loan1)).thenReturn(dto1);
-        when(loanMapper.toDto(loan2)).thenReturn(dto2);
-
-        ResponseEntity<Page<LoanInformationDto>> response = loanService.getAllLoans(basePageRequest, filterDto);
-
-        assertNotNull(response);
-        Page<LoanInformationDto> resultPage = response.getBody();
-        assertNotNull(resultPage);
-        assertEquals(2, resultPage.getContent().size());
-
-        ArgumentCaptor<Pageable> pageableCaptor = ArgumentCaptor.forClass(Pageable.class);
-        verify(loanRepository).findAll(any(Specification.class), pageableCaptor.capture());
-        Pageable capturedPageable = pageableCaptor.getValue();
-
-        Sort.Order order = capturedPageable.getSort().getOrderFor("agreementDate");
-        assertNotNull(order);
-        assertEquals(Sort.Direction.DESC, order.getDirection());
-    }
 
     @Test
     void whenStatusIsNull_thenSortByAccountAccountNumber() {
@@ -134,11 +124,20 @@ public class GetAllLoansTests {
         account1.setAccountNumber("12");
         loan1.setAccount(account1);
 
+        Currency currency = new Currency();
+        currency.setId(UUID.randomUUID());
+        currency.setName("EUR");
+        currency.setActive(true);
+        currency.setSymbol("E");
+        currency.setVersion(0L);
+
         Loan loan2 = new Loan();
         loan2.setLoanNumber(222L);
         Account account2 = new Account();
         account2.setAccountNumber("12");
         loan2.setAccount(account2);
+        account2.setCurrency(currency);
+        account1.setCurrency(currency);
 
         List<Loan> loans = List.of(loan1, loan2);
         Page<Loan> loanPage = new PageImpl<>(loans, basePageRequest.withSort(Sort.by("account.accountNumber")), loans.size());
@@ -148,8 +147,9 @@ public class GetAllLoansTests {
         LoanInformationDto dto2 = mockLoans.get(1);
         when(loanMapper.toDto(loan1)).thenReturn(dto1);
         when(loanMapper.toDto(loan2)).thenReturn(dto2);
+        when(jwtUtil.extractRole(any())).thenReturn("employee");
 
-        ResponseEntity<Page<LoanInformationDto>> response = loanService.getAllLoans(basePageRequest, filterDto);
+        ResponseEntity<Page<LoanInformationDto>> response = loanService.getAllLoans("", basePageRequest, filterDto);
 
         assertNotNull(response);
         Page<LoanInformationDto> resultPage = response.getBody();

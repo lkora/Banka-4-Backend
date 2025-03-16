@@ -3,9 +3,10 @@ package rs.banka4.user_service.domain.loan.db;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.proxy.HibernateProxy;
+import rs.banka4.user_service.domain.account.db.Account;
+import rs.banka4.user_service.domain.currency.db.Currency;
 
 import java.math.BigDecimal;
-import java.time.LocalDate;
 import java.util.Objects;
 import java.util.UUID;
 
@@ -15,23 +16,41 @@ import java.util.UUID;
 @RequiredArgsConstructor
 @AllArgsConstructor
 @Builder
-@Table(name = "loan_installments")
-public class LoanInstallment {
-
+@Table(name = "loan_requests")
+public class LoanRequest {
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
     private UUID id;
 
+    private BigDecimal amount;
+
     @ManyToOne
+    @JoinColumn(name = "currency_id")
+    private Currency currency;
+
+    private String employmentStatus;
+
+    private Integer employmentPeriod;
+
+    private Integer repaymentPeriod;
+
+    private String purposeOfLoan;
+
+    @ManyToOne
+    private Account account;
+
+    @OneToOne
     private Loan loan;
 
-    private BigDecimal installmentAmount;
-    private BigDecimal interestRateAmount;
-    private LocalDate expectedDueDate;
-    private LocalDate actualDueDate;
+    private BigDecimal monthlyIncome;
 
     @Enumerated(EnumType.STRING)
-    private PaymentStatus paymentStatus;
+    private LoanType type;
+
+    @Enumerated(EnumType.STRING)
+    private Loan.InterestType interestType;
+
+    private String contactPhone;
 
     @Override
     public final boolean equals(Object o) {
@@ -40,19 +59,12 @@ public class LoanInstallment {
         Class<?> oEffectiveClass = o instanceof HibernateProxy ? ((HibernateProxy) o).getHibernateLazyInitializer().getPersistentClass() : o.getClass();
         Class<?> thisEffectiveClass = this instanceof HibernateProxy ? ((HibernateProxy) this).getHibernateLazyInitializer().getPersistentClass() : this.getClass();
         if (thisEffectiveClass != oEffectiveClass) return false;
-        LoanInstallment that = (LoanInstallment) o;
+        LoanRequest that = (LoanRequest) o;
         return getId() != null && Objects.equals(getId(), that.getId());
     }
 
     @Override
     public final int hashCode() {
         return this instanceof HibernateProxy ? ((HibernateProxy) this).getHibernateLazyInitializer().getPersistentClass().hashCode() : getClass().hashCode();
-    }
-
-    @Override
-    public String toString() {
-        return "LoanInstallment{" +
-                "id=" + id +
-                '}';
     }
 }
