@@ -110,6 +110,10 @@ public class TotpService implements TotpAbs {
         );
     }
 
+    public boolean verifyClient(Authentication authentication, String otpCode) {
+        return validate(authentication.getCredentials().toString(), otpCode);
+    }
+
     @Override
     public String generateCode(String authorization) {
         String email = extractEmailFromToken(authorization);

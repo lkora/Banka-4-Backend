@@ -1,6 +1,7 @@
 package rs.banka4.user_service.controller;
 
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotBlank;
 import java.util.Set;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -12,7 +13,10 @@ import org.springframework.web.bind.annotation.*;
 import rs.banka4.user_service.controller.docs.AccountApiDocumentation;
 import rs.banka4.user_service.domain.account.dtos.AccountDto;
 import rs.banka4.user_service.domain.account.dtos.CreateAccountDto;
+import rs.banka4.user_service.domain.account.dtos.SetAccountLimitsDto;
+import rs.banka4.user_service.exceptions.authenticator.NotValidTotpException;
 import rs.banka4.user_service.service.abstraction.AccountService;
+import rs.banka4.user_service.service.impl.TotpService;
 
 @RestController
 @RequestMapping("/account")
@@ -20,6 +24,7 @@ import rs.banka4.user_service.service.abstraction.AccountService;
 public class AccountController implements AccountApiDocumentation {
 
     private final AccountService accountService;
+    private final TotpService totpService;
 
     @Override
     @GetMapping("/search")
@@ -73,4 +78,18 @@ public class AccountController implements AccountApiDocumentation {
         return ResponseEntity.status(HttpStatus.CREATED)
             .build();
     }
+
+    @PutMapping("/set-limits/{accountNumber}")
+    public ResponseEntity<Void> setAccountLimits(Authentication authentication,
+                                                 @NotBlank @PathVariable("accountNumber") String accountNumber,
+                                                 @RequestBody @Valid SetAccountLimitsDto dto) {
+        if (totpService.verifyClient(authentication, dto.otpCode())) {
+            String token = authentication.getCredentials().toString();
+            accountService.setAccountLimits(accountNumber, dto, token);
+            return ResponseEntity.ok().build();
+        } else {
+            throw new NotValidTotpException();
+        }
+    }
+
 }

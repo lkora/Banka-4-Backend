@@ -28,6 +28,8 @@ import rs.banka4.user_service.domain.account.dtos.CreateAccountDto;
 import rs.banka4.user_service.generator.AccountObjectMother;
 import rs.banka4.user_service.service.abstraction.AccountService;
 import rs.banka4.user_service.service.impl.CustomUserDetailsService;
+import rs.banka4.user_service.service.impl.TotpService;
+import rs.banka4.user_service.utils.JwtUtil;
 import rs.banka4.user_service.util.MockMvcUtil;
 import rs.banka4.user_service.utils.JwtUtil;
 
@@ -105,6 +107,11 @@ public class AccountControllerTests {
         @Bean
         public CustomUserDetailsService customUserDetailsService() {
             return Mockito.mock(CustomUserDetailsService.class);
+        }
+
+        @Bean
+        public TotpService totpService() {
+            return Mockito.mock(TotpService.class);
         }
     }
 

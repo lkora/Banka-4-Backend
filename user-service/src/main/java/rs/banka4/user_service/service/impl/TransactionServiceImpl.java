@@ -55,7 +55,7 @@ public class TransactionServiceImpl implements TransactionService {
     ) {
         Client client = getClient(authentication);
 
-        if (!veifyClient(authentication, createPaymentDto.otpCode())) {
+        if (!verifyClient(authentication, createPaymentDto.otpCode())) {
             throw new NotValidTotpException();
         }
 
@@ -105,7 +105,7 @@ public class TransactionServiceImpl implements TransactionService {
     ) {
         Client client = getClient(authentication);
 
-        if (!veifyClient(authentication, createTransferDto.otpCode())) {
+        if (!verifyClient(authentication, createTransferDto.otpCode())) {
             throw new NotValidTotpException();
         }
 
@@ -211,7 +211,7 @@ public class TransactionServiceImpl implements TransactionService {
         }
     }
 
-    private boolean veifyClient(Authentication authentication, String otpCode) {
+    private boolean verifyClient(Authentication authentication, String otpCode) {
         return totpService.validate(
             authentication.getCredentials()
                 .toString(),
