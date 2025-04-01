@@ -33,9 +33,11 @@ dependencies {
 	implementation("org.springframework.boot:spring-boot-starter-validation")
 	implementation("org.springframework.boot:spring-boot-starter-web")
 	implementation("org.springframework.boot:spring-boot-starter")
+	implementation("org.json:json:20231013")
 
 	implementation("org.springdoc:springdoc-openapi-starter-webmvc-api:2.8.5")
 	implementation("org.springdoc:springdoc-openapi-starter-common:2.8.5")
+
 
 	implementation("org.mapstruct:mapstruct:1.5.5.Final")
 	annotationProcessor("org.mapstruct:mapstruct-processor:1.5.5.Final")
@@ -50,6 +52,9 @@ dependencies {
 
 	testImplementation("org.springframework.boot:spring-boot-starter-test")
 	testRuntimeOnly("org.junit.platform:junit-platform-launcher")
+
+
+	implementation("com.squareup.okhttp3:okhttp:4.12.0")
 }
 
 tasks.withType<Test> {
