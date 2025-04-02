@@ -24,6 +24,7 @@ import org.springframework.stereotype.Component;
 import rs.banka4.stock_service.domain.exchanges.db.Exchange;
 import rs.banka4.stock_service.domain.listing.db.Listing;
 import rs.banka4.stock_service.domain.security.forex.db.CurrencyCode;
+import rs.banka4.stock_service.domain.security.forex.db.CurrencyMapper;
 import rs.banka4.stock_service.domain.security.forex.db.ForexLiquidity;
 import rs.banka4.stock_service.domain.security.forex.db.ForexPair;
 import rs.banka4.stock_service.domain.security.future.db.Future;
@@ -102,7 +103,7 @@ public class TestDataRunner implements CommandLineRunner {
         String ticker,
         long id,
         Stock stock,
-        String exchangeName,
+        String exchangeAcronym,
         Map<String, Exchange> exchangesMap
     ) throws IOException {
         // https://www.alphavantage.co/query?function=GLOBAL_QUOTE&symbol=AAPL&apikey=7P4ANAS869M38S3B
@@ -130,12 +131,17 @@ public class TestDataRunner implements CommandLineRunner {
             response.body()
                 .string();
 
-        JSONObject listingJson = new JSONObject(jsonResponse);
+        JSONObject listingJson = new JSONObject(jsonResponse).getJSONObject("Global Quote");
 
         double price = Double.parseDouble(listingJson.optString("05. price", "N/A"));
-        long fakeContractSize = Long.parseLong(listingJson.optString("22. volume", "N/A")) / 1000L;
+        long fakeContractSize = Long.parseLong(listingJson.optString("06. volume", "N/A")) / 1000L;
+        fakeContractSize = Long.max(1L, fakeContractSize);
         double fakeBid = price * 0.993;
         double fakeAsk = price * 1.007;
+        /*
+         * System.out.println("----------------"); System.out.println(exchangesMap.get(stock));
+         * System.out.println(stock); System.out.println("--------------");
+         */
         return Listing.builder()
             .id(new UUID(0L, id))
             .ask(new BigDecimal(fakeAsk))
@@ -143,7 +149,7 @@ public class TestDataRunner implements CommandLineRunner {
             .contractSize((int) fakeContractSize)
             .active(true)
             .lastRefresh(OffsetDateTime.now())
-            .exchange(exchangesMap.get(exchangeName))
+            .exchange(exchangesMap.get(exchangeAcronym))
             .security(stock)
             .build();
     }
@@ -194,6 +200,7 @@ public class TestDataRunner implements CommandLineRunner {
             for (String[] record : records) {
                 String ticker = record[0];
                 String exchange = record[1];
+                // System.out.println(exchange); System.out.println(exchangesMap.keySet());
                 Listing l =
                     fetchListingInfo(ticker, id++, stocksMap.get(ticker), exchange, exchangesMap);
                 listings.add(l);
@@ -203,6 +210,7 @@ public class TestDataRunner implements CommandLineRunner {
             LOGGER.info("Production listings seeded successfully.");
         } catch (Exception e) {
             LOGGER.error("Error occurred while seeding prod listings: {}", e.getMessage());
+            e.printStackTrace();
         }
     }
 
@@ -216,11 +224,8 @@ public class TestDataRunner implements CommandLineRunner {
         OkHttpClient client =
             new OkHttpClient().newBuilder()
                 .build();
-        MediaType mediaType = MediaType.parse("application/json");
-        RequestBody body = RequestBody.create(mediaType, "");
         Request request =
             new Request.Builder().url(url)
-                .method("GET", body)
                 .addHeader("Content-Type", "application/json")
                 .build();
         Response response =
@@ -234,11 +239,31 @@ public class TestDataRunner implements CommandLineRunner {
         String dividendYield = stockJson.optString("DividendYield", "N/A");
         String outstandingShares = stockJson.optString("SharesOutstanding", "N/A");
         String marketCap = stockJson.optString("MarketCapitalization", "N/A");
+
+        /*
+         * System.out.println("divident yield: " + dividendYield);
+         * System.out.println(outstandingShares); System.out.println(marketCap);
+         * System.out.println(name); System.out.println("--------------");
+         */
+
+        BigDecimal divYield = new BigDecimal(0.0);
+        try {
+            divYield = new BigDecimal(dividendYield);
+        } catch (Exception e) {
+        }
+
+        long outstandingSharesLong;
+        try {
+            outstandingSharesLong = Long.parseLong(outstandingShares);
+        } catch (Exception e) {
+            return null;
+        }
+
         return Stock.builder()
             .id(new UUID(0L, id))
             .name(name)
-            .dividendYield(new BigDecimal(dividendYield))
-            .outstandingShares(Long.parseLong(outstandingShares))
+            .dividendYield(divYield)
+            .outstandingShares(outstandingSharesLong)
             .createdAt(OffsetDateTime.now())
             .marketCap(new BigDecimal(marketCap))
             .ticker(ticker)
@@ -273,13 +298,18 @@ public class TestDataRunner implements CommandLineRunner {
             long id = 545353;
             long ms_id = 0;
             for (String ticker : tickers) {
-                stocks.add(fetchStockInfo(ticker, id++));
+                Stock stock = fetchStockInfo(ticker, id++);
+                if (stock == null) {
+                    continue;
+                }
+                stocks.add(stock);
                 Thread.sleep(200);
             }
             stockRepository.saveAllAndFlush(stocks);
             LOGGER.info("Production stocks seeded successfully.");
         } catch (Exception e) {
             LOGGER.error("Error occurred while seeding prod stocks: {}", e.getMessage());
+            e.printStackTrace();
         }
     }
 
@@ -300,7 +330,7 @@ public class TestDataRunner implements CommandLineRunner {
                 .build();
 
         HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
-        System.out.println(response.body());
+        // System.out.println(response.body());
         JSONObject exchangeData = new JSONObject(response.body());
         return exchangeData;
     }
@@ -357,7 +387,6 @@ public class TestDataRunner implements CommandLineRunner {
                     val = v1 / v2;
                 } catch (JSONException e) {
                     LOGGER.error("Json exception in calculating forex pair value");
-                    System.exit(1);
                 }
 
                 forexPairs.add(
@@ -512,7 +541,11 @@ public class TestDataRunner implements CommandLineRunner {
             for (String[] record : records) {
                 String name = record[0];
                 long size = Long.parseLong(record[1]);
-                UnitName unitName = UnitName.valueOf(record[2]);
+                UnitName unitName =
+                    UnitName.valueOf(
+                        record[2].toUpperCase()
+                            .replace(" ", "_")
+                    );
                 long margin = Long.parseLong(record[3]);
                 String type = record[4];
 
@@ -574,8 +607,8 @@ public class TestDataRunner implements CommandLineRunner {
                 String country = fields[3];
                 String currency = fields[4];
                 String timeZone = fields[5];
-                LocalTime openTime = LocalTime.parse(fields[6]);
-                LocalTime closeTime = LocalTime.parse(fields[7]);
+                LocalTime openTime = LocalTime.parse(fields[6].strip());
+                LocalTime closeTime = LocalTime.parse(fields[7].strip());
 
                 LocalDate fixedDate = LocalDate.of(2000, 1, 1);
                 LocalDateTime openDateTimeLocal = LocalDateTime.of(fixedDate, openTime);
@@ -592,13 +625,22 @@ public class TestDataRunner implements CommandLineRunner {
                 OffsetDateTime openDateTime = OffsetDateTime.of(openDateTimeLocal, openOffset);
                 OffsetDateTime closeDateTime = OffsetDateTime.of(closeDateTimeLocal, closeOffset);
 
+                CurrencyCode cc = null;
+                try {
+                    cc = CurrencyMapper.mapToCurrencyCode(currency);
+                    if (cc == null) {
+                        throw new IllegalArgumentException();
+                    }
+                } catch (IllegalArgumentException e) {
+                    continue;
+                }
 
                 Exchange exchange =
                     Exchange.builder()
                         .id(new UUID(ms_id, id++))
                         .timeZone(timeZone)
                         .exchangeMICCode(micCode)
-                        .currency(CurrencyCode.valueOf(currency))
+                        .currency(cc)
                         .polity(country)
                         .exchangeAcronym(acronym)
                         .exchangeName(name)
