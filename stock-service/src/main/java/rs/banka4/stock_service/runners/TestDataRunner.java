@@ -47,6 +47,9 @@ public class TestDataRunner implements CommandLineRunner {
     private final ListingDailyPriceInfoRepository listingDailyPriceInfoRepository;
     private final OkHttpClient stockHttpClient;
 
+    private Exchange srbForexExchange = null;
+    private Exchange srbFutureExchange = null;
+
     @Value("${spring.alphavantage.api_key}")
     private String vantageKey = null;
 
@@ -204,6 +207,22 @@ public class TestDataRunner implements CommandLineRunner {
                 listings.add(l);
                 Thread.sleep(200);
             }
+
+            for (ForexPair fp : forexPairRepository.findAll()) {
+                Listing.builder().ask(fp.getExchangeRate()).bid(fp.getExchangeRate())
+                    .exchange(srbForexExchange).lastRefresh(OffsetDateTime.now()).active(true).security(fp).contractSize(1)
+                    .build();
+            }
+
+            for (Future f : futureRepository.findAll()) {
+                Listing.builder()
+                    .ask(new BigDecimal(1000100))
+                    .bid(new BigDecimal(1000000))
+                    .exchange(srbFutureExchange)
+                    .lastRefresh(OffsetDateTime.now()).active(true).security(f).contractSize(1)
+                    .build();
+            }
+
             listingRepository.saveAllAndFlush(listings);
             LOGGER.info("Production listings seeded successfully.");
         } catch (Exception e) {
@@ -704,6 +723,7 @@ public class TestDataRunner implements CommandLineRunner {
                     .createdAt(LocalDate.now())
                     .build();
 
+            srbForexExchange = exchange;
             exchanges.add(exchange);
 
             exchange =
@@ -720,6 +740,7 @@ public class TestDataRunner implements CommandLineRunner {
                     .createdAt(LocalDate.now())
                     .build();
 
+            srbFutureExchange = exchange;
             exchanges.add(exchange);
 
             exchangeRepository.saveAllAndFlush(exchanges);
