@@ -9,6 +9,6 @@ public class OkHttpConfig {
     @Bean
     public OkHttpClient stockHttpClient() {
         return new OkHttpClient().newBuilder()
-                .build();
+            .build();
     }
 }

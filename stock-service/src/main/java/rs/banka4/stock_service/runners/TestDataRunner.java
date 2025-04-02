@@ -47,6 +47,9 @@ public class TestDataRunner implements CommandLineRunner {
     private final ListingDailyPriceInfoRepository listingDailyPriceInfoRepository;
     private final OkHttpClient stockHttpClient;
 
+    private Exchange srbForexExchange = null;
+    private Exchange srbFutureExchange = null;
+
     @Value("${spring.alphavantage.api_key}")
     private String vantageKey = null;
 
@@ -204,6 +207,31 @@ public class TestDataRunner implements CommandLineRunner {
                 listings.add(l);
                 Thread.sleep(200);
             }
+
+            for (ForexPair fp : forexPairRepository.findAll()) {
+                Listing.builder()
+                    .ask(fp.getExchangeRate())
+                    .bid(fp.getExchangeRate())
+                    .exchange(srbForexExchange)
+                    .lastRefresh(OffsetDateTime.now())
+                    .active(true)
+                    .security(fp)
+                    .contractSize(1)
+                    .build();
+            }
+
+            for (Future f : futureRepository.findAll()) {
+                Listing.builder()
+                    .ask(new BigDecimal(1000100))
+                    .bid(new BigDecimal(1000000))
+                    .exchange(srbFutureExchange)
+                    .lastRefresh(OffsetDateTime.now())
+                    .active(true)
+                    .security(f)
+                    .contractSize(1)
+                    .build();
+            }
+
             listingRepository.saveAllAndFlush(listings);
             LOGGER.info("Production listings seeded successfully.");
         } catch (Exception e) {
@@ -407,8 +435,7 @@ public class TestDataRunner implements CommandLineRunner {
         List<String> forexPairs = new ArrayList<>();
         for (int i = 0; i < CurrencyCode.values().length; i++) {
             for (int j = 0; j < CurrencyCode.values().length; j++) {
-                if(i == j)
-                    continue;
+                if (i == j) continue;
 
                 // FETCHING THE FOREX PAIRS
                 String url =
@@ -439,25 +466,32 @@ public class TestDataRunner implements CommandLineRunner {
             }
         }
 
-        for(String s : forexPairs) {
-            try{
-            JSONObject stockJson = new JSONObject(s)
-                .getJSONObject("Realtime Currency Exchange Rate");
+        for (String s : forexPairs) {
+            try {
+                JSONObject stockJson =
+                    new JSONObject(s).getJSONObject("Realtime Currency Exchange Rate");
 
-            String ticker = stockJson.optString("1. From_Currency Code") + "/" + stockJson.optString("3. To_Currency Code");
+                String ticker =
+                    stockJson.optString("1. From_Currency Code")
+                        + "/"
+                        + stockJson.optString("3. To_Currency Code");
 
-            ForexPair forexPair = ForexPair
-                .builder()
-                .baseCurrency(CurrencyCode.valueOf(stockJson.optString("1. From_Currency Code")))
-                .quoteCurrency(CurrencyCode.valueOf(stockJson.optString("3. To_Currency Code")))
-                .exchangeRate(new BigDecimal(stockJson.optString("5. Exchange Rate")))
-                .liquidity(ForexLiquidity.LOW)
-                .ticker(ticker.toUpperCase())
-                .name(ticker)
-                .build();
+                ForexPair forexPair =
+                    ForexPair.builder()
+                        .baseCurrency(
+                            CurrencyCode.valueOf(stockJson.optString("1. From_Currency Code"))
+                        )
+                        .quoteCurrency(
+                            CurrencyCode.valueOf(stockJson.optString("3. To_Currency Code"))
+                        )
+                        .exchangeRate(new BigDecimal(stockJson.optString("5. Exchange Rate")))
+                        .liquidity(ForexLiquidity.LOW)
+                        .ticker(ticker.toUpperCase())
+                        .name(ticker)
+                        .build();
 
                 forexPairRepository.saveAndFlush(forexPair);
-            }catch (Exception e){
+            } catch (Exception e) {
                 System.out.println("Wrong forex pair, error message: " + e.getMessage());
             }
         }
@@ -704,6 +738,7 @@ public class TestDataRunner implements CommandLineRunner {
                     .createdAt(LocalDate.now())
                     .build();
 
+            srbForexExchange = exchange;
             exchanges.add(exchange);
 
             exchange =
@@ -720,6 +755,7 @@ public class TestDataRunner implements CommandLineRunner {
                     .createdAt(LocalDate.now())
                     .build();
 
+            srbFutureExchange = exchange;
             exchanges.add(exchange);
 
             exchangeRepository.saveAllAndFlush(exchanges);
