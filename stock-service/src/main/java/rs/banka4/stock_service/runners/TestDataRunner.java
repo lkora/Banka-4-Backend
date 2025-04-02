@@ -45,6 +45,7 @@ public class TestDataRunner implements CommandLineRunner {
     private final ListingRepository listingRepository;
     private final ExchangeRepository exchangeRepository;
     private final ListingDailyPriceInfoRepository listingDailyPriceInfoRepository;
+    private final OkHttpClient stockHttpClient;
 
     @Value("${spring.alphavantage.api_key}")
     private String vantageKey = null;
@@ -117,15 +118,12 @@ public class TestDataRunner implements CommandLineRunner {
                 .append(vantageKey)
                 .toString();
 
-        OkHttpClient client =
-            new OkHttpClient().newBuilder()
-                .build();
         Request request =
             new Request.Builder().url(url)
                 .addHeader("Content-Type", "application/json")
                 .build();
         Response response =
-            client.newCall(request)
+            stockHttpClient.newCall(request)
                 .execute();
         String jsonResponse =
             response.body()
@@ -221,15 +219,12 @@ public class TestDataRunner implements CommandLineRunner {
                 + ticker
                 + "&apikey="
                 + vantageKey;
-        OkHttpClient client =
-            new OkHttpClient().newBuilder()
-                .build();
         Request request =
             new Request.Builder().url(url)
                 .addHeader("Content-Type", "application/json")
                 .build();
         Response response =
-            client.newCall(request)
+            stockHttpClient.newCall(request)
                 .execute();
         String jsonResponse =
             response.body()
@@ -409,12 +404,12 @@ public class TestDataRunner implements CommandLineRunner {
 
 
     private void seedForexPairs() {
-        OkHttpClient client =
-            new OkHttpClient().newBuilder()
-                .build();
         List<String> forexPairs = new ArrayList<>();
         for (int i = 0; i < CurrencyCode.values().length; i++) {
-            for (int j = i + 1; j < CurrencyCode.values().length; j++) {
+            for (int j = 0; j < CurrencyCode.values().length; j++) {
+                if(i == j)
+                    continue;
+
                 // FETCHING THE FOREX PAIRS
                 String url =
                     "https://www.alphavantage.co/query?function=CURRENCY_EXCHANGE_RATE&from_currency="
@@ -430,7 +425,7 @@ public class TestDataRunner implements CommandLineRunner {
                         .build();
                 try {
                     Response response =
-                        client.newCall(request)
+                        stockHttpClient.newCall(request)
                             .execute();
                     assert response.body() != null;
                     String jsonResponse =
@@ -443,6 +438,7 @@ public class TestDataRunner implements CommandLineRunner {
                 }
             }
         }
+
         for(String s : forexPairs) {
             try{
             JSONObject stockJson = new JSONObject(s)
