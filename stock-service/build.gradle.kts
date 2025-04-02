@@ -55,6 +55,7 @@ dependencies {
 
 
 	implementation("com.squareup.okhttp3:okhttp:4.12.0")
+	implementation("org.apache.commons:commons-math3:3.6.1")
 }
 
 tasks.withType<Test> {

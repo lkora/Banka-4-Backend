@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
@@ -23,6 +24,9 @@ import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Component;
 import rs.banka4.stock_service.domain.exchanges.db.Exchange;
 import rs.banka4.stock_service.domain.listing.db.Listing;
+import rs.banka4.stock_service.domain.options.db.BlackHolesOptionMaker;
+import rs.banka4.stock_service.domain.options.db.Option;
+import rs.banka4.stock_service.domain.security.Security;
 import rs.banka4.stock_service.domain.security.forex.db.CurrencyCode;
 import rs.banka4.stock_service.domain.security.forex.db.CurrencyMapper;
 import rs.banka4.stock_service.domain.security.forex.db.ForexLiquidity;
@@ -45,6 +49,7 @@ public class TestDataRunner implements CommandLineRunner {
     private final ListingRepository listingRepository;
     private final ExchangeRepository exchangeRepository;
     private final ListingDailyPriceInfoRepository listingDailyPriceInfoRepository;
+    private final OptionsRepository optionsRepository;
     private final OkHttpClient stockHttpClient;
 
     private Exchange srbForexExchange = null;
@@ -100,7 +105,40 @@ public class TestDataRunner implements CommandLineRunner {
             LOGGER.info("Not reseeding listingsRepository, data already exists");
         }
 
+        if (optionsRepository.count() == 0) {
+            seedProductionOptions();
+        } else {
+            LOGGER.info("Not reseeding options, data already exists");
+        }
+
         LOGGER.info("Seeding prod finished, starting...");
+    }
+
+    private void seedProductionOptions() {
+        try {
+            BlackHolesOptionMaker blackHolesOptionMaker = new BlackHolesOptionMaker();
+            List<Option> options = new ArrayList<>();
+
+            for (Listing listing : listingRepository.findAll()) {
+                Security se = listing.getSecurity();
+                if (!(se instanceof Stock)) {
+                    continue;
+                }
+                Stock stock = (Stock) se;
+                BigDecimal price =
+                    listing.getAsk()
+                        .add(listing.getBid())
+                        .divide(BigDecimal.valueOf(2), 6, RoundingMode.HALF_UP);
+                List<Option> lOptions = blackHolesOptionMaker.generateOptions(stock, price);
+                options.addAll(lOptions);
+            }
+
+            optionsRepository.saveAllAndFlush(options);
+            LOGGER.info("Production options seeded successfully.");
+        } catch (Exception e) {
+            LOGGER.error("Error occurred while seeding prod options: {}", e.getMessage());
+            e.printStackTrace();
+        }
     }
 
     private Listing fetchListingInfo(
