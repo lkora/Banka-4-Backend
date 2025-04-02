@@ -443,7 +443,29 @@ public class TestDataRunner implements CommandLineRunner {
                 }
             }
         }
-        JSONObject stockJson = new JSONObject(forexPairs);
+        for(String s : forexPairs) {
+            try{
+            JSONObject stockJson = new JSONObject(s)
+                .getJSONObject("Realtime Currency Exchange Rate");
+
+            String ticker = stockJson.optString("1. From_Currency Code") + "/" + stockJson.optString("3. To_Currency Code");
+
+            ForexPair forexPair = ForexPair
+                .builder()
+                .baseCurrency(CurrencyCode.valueOf(stockJson.optString("1. From_Currency Code")))
+                .quoteCurrency(CurrencyCode.valueOf(stockJson.optString("3. To_Currency Code")))
+                .exchangeRate(new BigDecimal(stockJson.optString("5. Exchange Rate")))
+                .liquidity(ForexLiquidity.LOW)
+                .ticker(ticker.toUpperCase())
+                .name(ticker)
+                .build();
+
+                forexPairRepository.saveAndFlush(forexPair);
+            }catch (Exception e){
+                System.out.println("Wrong forex pair, error message: " + e.getMessage());
+            }
+        }
+
     }
 
     private void seedDevForexPairs() {
