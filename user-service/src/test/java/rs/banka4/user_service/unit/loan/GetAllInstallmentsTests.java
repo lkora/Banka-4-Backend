@@ -19,19 +19,19 @@ import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
+import rs.banka4.rafeisen.common.exceptions.jwt.Unauthorized;
 import rs.banka4.user_service.domain.account.db.Account;
 import rs.banka4.user_service.domain.loan.db.Loan;
 import rs.banka4.user_service.domain.loan.db.LoanInstallment;
 import rs.banka4.user_service.domain.loan.db.PaymentStatus;
 import rs.banka4.user_service.domain.loan.dtos.LoanInstallmentDto;
 import rs.banka4.user_service.domain.user.client.db.Client;
-import rs.banka4.user_service.exceptions.jwt.Unauthorized;
 import rs.banka4.user_service.exceptions.loan.LoanNotFound;
 import rs.banka4.user_service.repositories.ClientRepository;
 import rs.banka4.user_service.repositories.LoanInstallmentRepository;
 import rs.banka4.user_service.repositories.LoanRepository;
+import rs.banka4.user_service.service.abstraction.JwtService;
 import rs.banka4.user_service.service.impl.LoanInstallmentServiceImpl;
-import rs.banka4.user_service.utils.JwtUtil;
 
 public class GetAllInstallmentsTests {
     @Mock
@@ -42,7 +42,7 @@ public class GetAllInstallmentsTests {
     @Mock
     private ClientRepository clientRepository;
     @Mock
-    private JwtUtil jwtUtil;
+    private JwtService jwtService;
 
     @InjectMocks
     private LoanInstallmentServiceImpl loanService;
@@ -61,12 +61,12 @@ public class GetAllInstallmentsTests {
         testClient2 = new Client();
 
         testClient2.setEmail("email2");
-        testClient2.setId(UUID.randomUUID());
+        testClient2.setId(UUID.fromString("053f4cd3-0ece-4bcb-a667-b9ded5e2a211"));
         testClient.setEmail("email");
-        testClient.setId(UUID.randomUUID());
-        testAccount.setId(UUID.randomUUID());
+        testClient.setId(UUID.fromString("a0eabc83-07f8-4fad-92ab-4e879f865f36"));
+        testAccount.setId(UUID.fromString("f3c265ee-f1d9-4f30-b0ca-340baae25155"));
         testAccount.setClient(testClient);
-        testLoan.setId(UUID.randomUUID());
+        testLoan.setId(UUID.fromString("6108c3f1-8624-4817-bfd8-dd28a892776e"));
         testLoan.setLoanNumber(testLoanNumber);
         testLoan.setAccount(testAccount);
     }
@@ -75,9 +75,12 @@ public class GetAllInstallmentsTests {
     void testGetInstallmentsForLoan_UpcomingInstallmentExists() {
 
         when(loanRepository.findByLoanNumber(eq(testLoanNumber))).thenReturn(Optional.of(testLoan));
-        when(jwtUtil.extractRole(anyString())).thenReturn("client");
-        when(jwtUtil.extractUsername(anyString())).thenReturn("email");
-        when(clientRepository.findByEmail(anyString())).thenReturn(Optional.ofNullable(testClient));
+        when(jwtService.extractRole(anyString())).thenReturn("client");
+        when(jwtService.extractUserId(anyString())).thenReturn(
+            UUID.fromString("a0eabc83-07f8-4fad-92ab-4e879f865f36")
+        );
+        when(clientRepository.findById(UUID.fromString("a0eabc83-07f8-4fad-92ab-4e879f865f36")))
+            .thenReturn(Optional.ofNullable(testClient));
 
         LoanInstallment upcoming = new LoanInstallment();
         upcoming.setId(UUID.randomUUID());
@@ -125,9 +128,12 @@ public class GetAllInstallmentsTests {
     @Test
     void testGetInstallmentsForLoan_NoUpcomingInstallment() {
         when(loanRepository.findByLoanNumber(eq(testLoanNumber))).thenReturn(Optional.of(testLoan));
-        when(jwtUtil.extractRole(anyString())).thenReturn("client");
-        when(jwtUtil.extractUsername(anyString())).thenReturn("email");
-        when(clientRepository.findByEmail(anyString())).thenReturn(Optional.ofNullable(testClient));
+        when(jwtService.extractRole(anyString())).thenReturn("client");
+        when(clientRepository.findById(UUID.fromString("a0eabc83-07f8-4fad-92ab-4e879f865f36")))
+            .thenReturn(Optional.ofNullable(testClient));
+        when(jwtService.extractUserId(anyString())).thenReturn(
+            UUID.fromString("a0eabc83-07f8-4fad-92ab-4e879f865f36")
+        );
         Page<LoanInstallment> emptyPage =
             new PageImpl<>(
                 List.of(),
@@ -155,9 +161,12 @@ public class GetAllInstallmentsTests {
     @Test
     void testGetInstallmentsForLoan_LoanNotFound() {
         when(loanRepository.findByLoanNumber(eq(testLoanNumber))).thenReturn(Optional.empty());
-        when(jwtUtil.extractRole(anyString())).thenReturn("client");
-        when(jwtUtil.extractUsername(anyString())).thenReturn("email");
-        when(clientRepository.findByEmail(anyString())).thenReturn(Optional.ofNullable(testClient));
+        when(jwtService.extractRole(anyString())).thenReturn("client");
+        when(jwtService.extractUserId(anyString())).thenReturn(
+            UUID.fromString("a0eabc83-07f8-4fad-92ab-4e879f865f36")
+        );
+        when(clientRepository.findById(UUID.fromString("a0eabc83-07f8-4fad-92ab-4e879f865f36")))
+            .thenReturn(Optional.ofNullable(testClient));
 
         assertThrows(
             LoanNotFound.class,
@@ -172,11 +181,12 @@ public class GetAllInstallmentsTests {
         when(loanRepository.findByLoanNumber(eq(testLoanNumber))).thenReturn(
             Optional.ofNullable(testLoan)
         );
-        when(jwtUtil.extractRole(anyString())).thenReturn("client");
-        when(jwtUtil.extractUsername(anyString())).thenReturn("email2");
-        when(clientRepository.findByEmail(anyString())).thenReturn(
-            Optional.ofNullable(testClient2)
+        when(jwtService.extractRole(anyString())).thenReturn("client");
+        when(jwtService.extractUserId(anyString())).thenReturn(
+            UUID.fromString("a0eabc83-07f8-4fad-92ab-4e879f865f36")
         );
+        when(clientRepository.findById(UUID.fromString("a0eabc83-07f8-4fad-92ab-4e879f865f36")))
+            .thenReturn(Optional.ofNullable(testClient2));
 
         assertThrows(
             Unauthorized.class,

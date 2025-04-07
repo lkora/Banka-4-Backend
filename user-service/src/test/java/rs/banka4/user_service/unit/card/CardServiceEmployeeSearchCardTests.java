@@ -1,6 +1,5 @@
 package rs.banka4.user_service.unit.card;
 
-import static org.junit.jupiter.api.Assertions.*;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.ArgumentMatchers.any;
@@ -26,8 +25,8 @@ import rs.banka4.user_service.domain.card.db.Card;
 import rs.banka4.user_service.domain.card.dtos.CardDto;
 import rs.banka4.user_service.generator.CardObjectMother;
 import rs.banka4.user_service.repositories.CardRepository;
+import rs.banka4.user_service.service.abstraction.JwtService;
 import rs.banka4.user_service.service.impl.CardServiceImpl;
-import rs.banka4.user_service.utils.JwtUtil;
 
 public class CardServiceEmployeeSearchCardTests {
 
@@ -38,7 +37,7 @@ public class CardServiceEmployeeSearchCardTests {
     private CardServiceImpl cardService;
 
     @Mock
-    private JwtUtil jwtUtil;
+    private JwtService jwtService;
 
     @BeforeEach
     void setUp() {
@@ -82,7 +81,7 @@ public class CardServiceEmployeeSearchCardTests {
         String token = "mocked-token";
 
         // Mock JWT role extraction
-        when(jwtUtil.extractRole(token)).thenReturn("employee");
+        when(jwtService.extractRole(token)).thenReturn("employee");
 
         // Mock repository call
         when(cardRepository.findAll(any(Specification.class), eq(pageRequest))).thenReturn(

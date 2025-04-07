@@ -29,7 +29,6 @@ import rs.banka4.user_service.domain.company.dtos.CreateCompanyDto;
 import rs.banka4.user_service.domain.company.mapper.CompanyMapper;
 import rs.banka4.user_service.domain.currency.db.Currency;
 import rs.banka4.user_service.domain.user.client.db.Client;
-import rs.banka4.user_service.domain.user.client.mapper.ClientMapper;
 import rs.banka4.user_service.domain.user.employee.db.Employee;
 import rs.banka4.user_service.exceptions.account.*;
 import rs.banka4.user_service.exceptions.account.AccountNotFound;
@@ -39,7 +38,6 @@ import rs.banka4.user_service.exceptions.user.client.ClientNotFound;
 import rs.banka4.user_service.exceptions.user.employee.EmployeeNotFound;
 import rs.banka4.user_service.repositories.*;
 import rs.banka4.user_service.service.abstraction.*;
-import rs.banka4.user_service.utils.JwtUtil;
 import rs.banka4.user_service.utils.specification.AccountSpecification;
 import rs.banka4.user_service.utils.specification.SpecificationCombinator;
 
@@ -49,24 +47,23 @@ public class AccountServiceImpl implements AccountService {
     private static final Logger LOGGER = LoggerFactory.getLogger(AccountServiceImpl.class);
 
     private final ClientService clientService;
-    private final ClientMapper clientMapper;
     private final CompanyService companyService;
     private final CurrencyRepository currencyRepository;
     private final CompanyMapper companyMapper;
     private final AccountRepository accountRepository;
     private final ClientRepository clientRepository;
-    private final JwtUtil jwtUtil;
     private final EmployeeService employeeService;
     private final CardService cardService;
+    private final JwtService jwtService;
 
 
     @Override
     public Set<AccountDto> getAccountsForClient(String token) {
-        String email = jwtUtil.extractUsername(token);
+        UUID userId = jwtService.extractUserId(token);
 
-        Optional<Client> client = clientService.getClientByEmail(email);
+        Optional<Client> client = clientRepository.findById(userId);
         if (client.isEmpty()) {
-            throw new ClientNotFound(email);
+            throw new ClientNotFound(userId.toString());
         }
 
         Set<Account> accounts = accountRepository.findAllByClient(client.get());
@@ -77,18 +74,22 @@ public class AccountServiceImpl implements AccountService {
 
     @Override
     public AccountDto getAccount(String token, String accountNumber) {
-        String email = jwtUtil.extractUsername(token);
+        UUID userId = jwtService.extractUserId(token);
+        Optional<Client> client = clientRepository.findById(userId);
+
         Optional<Account> account = accountRepository.findAccountByAccountNumber(accountNumber);
 
         if (account.isEmpty()) {
             throw new AccountNotFound();
         }
         if (
-            !email.equals(
-                account.get()
-                    .getClient()
-                    .getEmail()
-            )
+            !client.get()
+                .getEmail()
+                .equals(
+                    account.get()
+                        .getClient()
+                        .getEmail()
+                )
         ) {
             throw new IncorrectCredentials();
         }
@@ -147,13 +148,18 @@ public class AccountServiceImpl implements AccountService {
         String accountNumber,
         PageRequest pageRequest
     ) {
-        String email =
-            jwtUtil.extractUsername(
+        UUID clientId =
+            jwtService.extractUserId(
                 auth.getCredentials()
                     .toString()
             );
+        Optional<Client> client = clientRepository.findById(clientId);
+        if (client.isEmpty()) {
+            throw new ClientNotFound(clientId.toString());
+        }
+
         String role =
-            jwtUtil.extractRole(
+            jwtService.extractRole(
                 auth.getCredentials()
                     .toString()
             );
@@ -169,8 +175,13 @@ public class AccountServiceImpl implements AccountService {
         if (accountNumber != null && !accountNumber.isEmpty()) {
             combinator.and(AccountSpecification.hasAccountNumber(accountNumber));
         }
-        if (role.equals("client")) {
-            combinator.and(AccountSpecification.hasEmail(email));
+        if (role.equalsIgnoreCase("client")) {
+            combinator.and(
+                AccountSpecification.hasEmail(
+                    client.get()
+                        .getEmail()
+                )
+            );
         }
 
         Page<Account> accounts = accountRepository.findAll(combinator.build(), pageRequest);
@@ -192,12 +203,11 @@ public class AccountServiceImpl implements AccountService {
                 .orElseThrow(AccountNotFound::new);
 
         // Verify ownership
-        String userId = jwtUtil.extractClaim(token, claims -> claims.get("id", String.class));
+        UUID clientId = jwtService.extractUserId(token);
         if (
             !account.getClient()
                 .getId()
-                .toString()
-                .equals(userId)
+                .equals(clientId)
         ) {
             throw new NotAccountOwner();
         }
@@ -338,11 +348,11 @@ public class AccountServiceImpl implements AccountService {
      * @throws EmployeeNotFound if the employee with the given email is not found
      */
     private void connectEmployeeToAccount(Account account, String auth) {
-        String username = jwtUtil.extractUsername(auth);
-        Optional<Employee> employee = employeeService.findEmployeeByEmail(username);
+        UUID employeeId = jwtService.extractUserId(auth);
+        Optional<Employee> employee = employeeService.findEmployeeById(employeeId);
 
         if (employee.isEmpty()) {
-            throw new EmployeeNotFound(username);
+            throw new EmployeeNotFound(employeeId.toString());
         } else {
             account.setEmployee(employee.get());
         }

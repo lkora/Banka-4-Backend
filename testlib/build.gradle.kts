@@ -1,6 +1,7 @@
 plugins {
 	`java-library`
 	id("io.spring.dependency-management")
+	id("banka4.code-style-conventions")
 }
 
 java {

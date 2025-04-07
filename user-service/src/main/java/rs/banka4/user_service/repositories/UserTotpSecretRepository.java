@@ -6,13 +6,11 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import rs.banka4.user_service.domain.authenticator.db.UserTotpSecret;
 
 public interface UserTotpSecretRepository extends JpaRepository<UserTotpSecret, UUID> {
-    Optional<UserTotpSecret> findByClient_Email(String email);
+    Optional<UserTotpSecret> findByEmployee_Id(UUID id);
 
-    Optional<UserTotpSecret> findByEmployee_Email(String email);
+    Optional<UserTotpSecret> findByClient_Id(UUID id);
 
-    Optional<UserTotpSecret> findByClient_Id(UUID clientId);
+    boolean existsByClient_Id(UUID uuid);
 
-    boolean existsByClient_Email(String email);
-
-    boolean existsByEmployee_Email(String email);
+    boolean existsByEmployee_Id(UUID uuid);
 }

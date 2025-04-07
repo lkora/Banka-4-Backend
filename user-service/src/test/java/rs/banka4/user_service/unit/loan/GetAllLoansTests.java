@@ -30,8 +30,8 @@ import rs.banka4.user_service.domain.loan.dtos.LoanInformationDto;
 import rs.banka4.user_service.domain.loan.mapper.LoanMapper;
 import rs.banka4.user_service.repositories.LoanRepository;
 import rs.banka4.user_service.repositories.LoanRequestRepository;
+import rs.banka4.user_service.service.abstraction.JwtService;
 import rs.banka4.user_service.service.impl.LoanServiceImpl;
-import rs.banka4.user_service.utils.JwtUtil;
 
 public class GetAllLoansTests {
     @Mock
@@ -44,7 +44,7 @@ public class GetAllLoansTests {
     private LoanServiceImpl loanService;
     private LoanRequest sampleLoanRequest;
     @Mock
-    private JwtUtil jwtUtil;
+    private JwtService jwtService;
 
     @BeforeEach
     void setUp() {
@@ -199,7 +199,7 @@ public class GetAllLoansTests {
         LoanInformationDto dto2 = mockLoans.get(1);
         when(loanMapper.toDto(loan1)).thenReturn(dto1);
         when(loanMapper.toDto(loan2)).thenReturn(dto2);
-        when(jwtUtil.extractRole(any())).thenReturn("employee");
+        when(jwtService.extractRole(any())).thenReturn("employee");
 
         ResponseEntity<Page<LoanInformationDto>> response =
             loanService.getAllLoans("", basePageRequest, filterDto);

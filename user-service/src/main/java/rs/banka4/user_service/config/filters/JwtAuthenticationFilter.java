@@ -10,14 +10,13 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
+import rs.banka4.rafeisen.common.exceptions.jwt.NoJwtProvided;
+import rs.banka4.rafeisen.common.security.AuthenticatedBankUserAuthentication;
+import rs.banka4.rafeisen.common.security.AuthenticatedBankUserPrincipal;
+import rs.banka4.rafeisen.common.utils.jwt.UnverifiedToken;
+import rs.banka4.rafeisen.common.utils.jwt.VerifiedAccessToken;
 import rs.banka4.user_service.config.WhiteListConfig;
-import rs.banka4.user_service.exceptions.jwt.NoJwtProvided;
-import rs.banka4.user_service.repositories.ClientRepository;
-import rs.banka4.user_service.repositories.EmployeeRepository;
-import rs.banka4.user_service.security.AuthenticatedBankUserAuthentication;
-import rs.banka4.user_service.security.AuthenticatedBankUserPrincipal;
-import rs.banka4.user_service.security.UserType;
-import rs.banka4.user_service.utils.JwtUtil;
+import rs.banka4.user_service.service.abstraction.JwtService;
 
 
 /**
@@ -26,10 +25,7 @@ import rs.banka4.user_service.utils.JwtUtil;
 @Component
 @RequiredArgsConstructor
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
-
-    private final JwtUtil jwtUtils;
-    private final EmployeeRepository employeeRepository;
-    private final ClientRepository clientRepository;
+    private final JwtService jwtService;
 
     /**
      * Filters the incoming request to check if it contains a valid JWT token in the Authorization
@@ -53,60 +49,47 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         FilterChain filterChain
     ) throws ServletException,
         IOException {
+        final var rawToken = parseAuthHeader(request.getHeader("Authorization"));
 
-        final String authorizationHeader = request.getHeader("Authorization");
-        String username = null;
-        String token = null;
+        /* TODO(arsen): remove */
+        if (!WhiteListConfig.isWhitelisted(request.getRequestURI()) && rawToken == null)
+            throw new NoJwtProvided();
 
-        if (!WhiteListConfig.isWhitelisted(request.getRequestURI())) {
-            if (authorizationHeader != null && authorizationHeader.startsWith("Bearer ")) {
-                token = authorizationHeader.substring(7);
-                username = jwtUtils.extractUsername(token);
-            } else {
+        if (rawToken != null) {
+            /* Provide authentication for the current user. */
+            final var token = jwtService.parseToken(rawToken);
+            if (!(token instanceof VerifiedAccessToken vat))
+                /* Gave me a refresh token.. silly lad. */
                 throw new NoJwtProvided();
-            }
-        }
 
-        if (
-            username != null
-                && SecurityContextHolder.getContext()
-                    .getAuthentication()
-                    == null
-        ) {
-            if (jwtUtils.validateToken(token, username)) {
-                final var role = jwtUtils.extractRole(token);
-                final var userId = jwtUtils.extractUserId(token);
-
-                /*
-                 * XXX: temporary kludge in order to populate user privileges.
-                 */
-                final var userType = UserType.valueOf(role.toUpperCase());
-                final var user = switch (userType) {
-                /* DO NOT ADD A DEFAULT CASE. */
-                case CLIENT -> clientRepository.findById(userId);
-                case EMPLOYEE -> employeeRepository.findById(userId);
-                };
-                if (!user.isPresent()) {
-                    throw new NoJwtProvided();
-                }
-
-                final var authentication =
-                    new AuthenticatedBankUserAuthentication(
-                        new AuthenticatedBankUserPrincipal(userType, userId),
-                        token,
-                        user.get()
-                            .getPrivileges()
-                    );
-
-                authentication.setDetails(
-                    new WebAuthenticationDetailsSource().buildDetails(request)
+            final var authentication =
+                new AuthenticatedBankUserAuthentication(
+                    new AuthenticatedBankUserPrincipal(token.getRole(), token.getSub()),
+                    rawToken.rawJwt(),
+                    vat.getPrivileges()
                 );
+            authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
 
-                SecurityContextHolder.getContext()
-                    .setAuthentication(authentication);
-            }
+            SecurityContextHolder.getContext()
+                .setAuthentication(authentication);
         }
 
         filterChain.doFilter(request, response);
+    }
+
+    private static UnverifiedToken parseAuthHeader(String header) {
+        if (header == null) return null;
+
+        final var bearerPrefix = "bearer ";
+        try {
+            if (
+                !header.substring(0, bearerPrefix.length())
+                    .equalsIgnoreCase(bearerPrefix)
+            ) return null;
+
+            return new UnverifiedToken(header.substring(bearerPrefix.length()));
+        } catch (IndexOutOfBoundsException ignored) {
+            return null;
+        }
     }
 }

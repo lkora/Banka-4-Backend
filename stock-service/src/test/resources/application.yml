@@ -1,11 +1,21 @@
 # Test-specific configuration.  !!!! DO NOT USE IN PRODUCTION !!!!
 spring:
+  profiles:
+    active: test
   jpa:
     hibernate:
       # Force Hibernate to crash us if the migrations are wrong.
       ddl-auto: validate
   flyway:
     clean-disabled: false
+  datasource:
+    # Hack: disable HikariCP in order to prevent:
+    #   ERROR: cached plan must not change result type
+    type: org.springframework.jdbc.datasource.SimpleDriverDataSource
+
+jwt:
+  keys:
+    verification: 'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=='
 
 logging:
   level:

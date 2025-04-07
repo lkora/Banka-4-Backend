@@ -5,7 +5,8 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.*;
 
 import jakarta.servlet.FilterChain;
-import java.util.Optional;
+import java.util.EnumSet;
+import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
@@ -16,14 +17,14 @@ import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.mock.web.MockHttpServletResponse;
 import org.springframework.web.servlet.HandlerExecutionChain;
 import org.springframework.web.servlet.HandlerMapping;
+import rs.banka4.rafeisen.common.exceptions.RouteNotFound;
+import rs.banka4.rafeisen.common.exceptions.jwt.NoJwtProvided;
+import rs.banka4.rafeisen.common.security.Privilege;
+import rs.banka4.rafeisen.common.security.UserType;
+import rs.banka4.rafeisen.common.utils.jwt.VerifiedAccessToken;
 import rs.banka4.user_service.config.filters.InvalidRouteFilter;
 import rs.banka4.user_service.config.filters.JwtAuthenticationFilter;
-import rs.banka4.user_service.domain.user.client.db.Client;
-import rs.banka4.user_service.exceptions.RouteNotFound;
-import rs.banka4.user_service.exceptions.jwt.NoJwtProvided;
-import rs.banka4.user_service.repositories.ClientRepository;
-import rs.banka4.user_service.repositories.EmployeeRepository;
-import rs.banka4.user_service.utils.JwtUtil;
+import rs.banka4.user_service.service.abstraction.JwtService;
 
 public class RoutesFilterTests {
 
@@ -34,15 +35,7 @@ public class RoutesFilterTests {
     private HandlerMapping handlerMapping;
 
     @Mock
-    private JwtUtil jwtUtil;
-
-    /* TODO(arsen): part of the kludge in JwtAuthenticationFilter. */
-    @Mock
-    private ClientRepository clientRepository;
-
-    /* TODO(arsen): part of the kludge in JwtAuthenticationFilter. */
-    @Mock
-    private EmployeeRepository employeeRepository;
+    private JwtService jwtService;
 
     @InjectMocks
     private InvalidRouteFilter invalidRouteFilter;
@@ -82,13 +75,11 @@ public class RoutesFilterTests {
         request.addHeader("Authorization", "Bearer " + token);
         HandlerExecutionChain handlerExecutionChain = new HandlerExecutionChain(new Object());
         when(handlerMapping.getHandler(request)).thenReturn(handlerExecutionChain);
-        when(jwtUtil.extractUsername(token)).thenReturn("username");
-        when(jwtUtil.extractRole(token)).thenReturn("client");
-        when(jwtUtil.validateToken(token, "username")).thenReturn(true);
-        when(clientRepository.findById(any())).thenReturn(
-            Optional.of(
-                Client.builder()
-                    .build()
+        when(jwtService.parseToken(any())).thenReturn(
+            new VerifiedAccessToken(
+                UserType.CLIENT,
+                UUID.fromString("0ce79491-f04b-400b-b868-4b328a3937f4"),
+                EnumSet.noneOf(Privilege.class)
             )
         );
 

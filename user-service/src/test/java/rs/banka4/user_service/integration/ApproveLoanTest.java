@@ -7,6 +7,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.HttpStatus;
@@ -19,7 +20,7 @@ import rs.banka4.user_service.domain.loan.db.LoanStatus;
 import rs.banka4.user_service.integration.generator.UserGenerator;
 import rs.banka4.user_service.integration.seeder.TestDataSeeder;
 import rs.banka4.user_service.repositories.LoanRepository;
-import rs.banka4.user_service.utils.JwtUtil;
+import rs.banka4.user_service.service.abstraction.JwtService;
 
 
 @SpringBootTest
@@ -33,8 +34,9 @@ public class ApproveLoanTest {
     @Autowired
     private UserGenerator userGen;
 
+    @Qualifier("jwtServiceImpl")
     @Autowired
-    private JwtUtil jwtUtil;
+    private JwtService jwtService;
 
     @Autowired
     private ObjectMapper objMapper;

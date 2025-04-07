@@ -14,7 +14,6 @@ import rs.banka4.user_service.exceptions.card.AuthorizedUserNotAllowed;
 import rs.banka4.user_service.exceptions.card.CardLimitExceededException;
 import rs.banka4.user_service.exceptions.card.DuplicateAuthorizationException;
 import rs.banka4.user_service.repositories.CardRepository;
-import rs.banka4.user_service.utils.JwtUtil;
 
 /**
  * Service interface for card management operations.

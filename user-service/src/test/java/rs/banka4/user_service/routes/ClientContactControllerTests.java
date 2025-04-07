@@ -22,14 +22,15 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors;
 import org.springframework.test.web.servlet.MockMvc;
+import rs.banka4.rafeisen.common.exceptions.ErrorResponseHandler;
 import rs.banka4.user_service.config.filters.JwtAuthenticationFilter;
 import rs.banka4.user_service.controller.ClientContactController;
 import rs.banka4.user_service.domain.user.client.dtos.ClientContactDto;
 import rs.banka4.user_service.domain.user.client.dtos.ClientContactRequest;
 import rs.banka4.user_service.generator.ClientObjectMother;
 import rs.banka4.user_service.service.abstraction.ClientContactService;
+import rs.banka4.user_service.service.abstraction.JwtService;
 import rs.banka4.user_service.util.MockMvcUtil;
-import rs.banka4.user_service.utils.JwtUtil;
 
 @WebMvcTest(ClientContactController.class)
 @Import(ClientContactControllerTests.MockBeansConfig.class)
@@ -120,13 +121,18 @@ public class ClientContactControllerTests {
         }
 
         @Bean
-        public JwtUtil jwtUtil() {
-            return Mockito.mock(JwtUtil.class);
+        public JwtService jwtUtil() {
+            return Mockito.mock(JwtService.class);
         }
 
         @Bean
         public JwtAuthenticationFilter jwtAuthenticationFilter() {
             return new NoopJwtAuthenticationFilter();
+        }
+
+        @Bean
+        public ErrorResponseHandler errorResponseHandler() {
+            return new ErrorResponseHandler();
         }
     }
 }

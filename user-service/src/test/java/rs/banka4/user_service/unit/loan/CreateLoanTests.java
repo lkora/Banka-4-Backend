@@ -30,15 +30,15 @@ import rs.banka4.user_service.repositories.LoanRepository;
 import rs.banka4.user_service.repositories.LoanRequestRepository;
 import rs.banka4.user_service.service.abstraction.AccountService;
 import rs.banka4.user_service.service.abstraction.ClientService;
+import rs.banka4.user_service.service.abstraction.JwtService;
 import rs.banka4.user_service.service.impl.LoanServiceImpl;
 import rs.banka4.user_service.service.impl.UserService;
-import rs.banka4.user_service.utils.JwtUtil;
 import rs.banka4.user_service.utils.loans.LoanRateUtil;
 
 @ExtendWith(MockitoExtension.class)
 public class CreateLoanTests {
     @Mock
-    private JwtUtil jwtUtil;
+    private JwtService jwtService;
 
     @Mock
     private LoanRateUtil loanRateUtil;
@@ -72,7 +72,7 @@ public class CreateLoanTests {
     void setUp() {
         loanApplicationDto = LoanObjectMother.generateLoanApplicationDto();
         client = new Client();
-        UUID clientId = UUID.randomUUID();
+        UUID clientId = UUID.fromString("4ba6cdd2-33c1-4573-ad1e-1a783d3b3924");
         client.setId(clientId);
         client.setEmail("test@example.com");
         client.setFirstName("OldFirstName");
@@ -89,8 +89,11 @@ public class CreateLoanTests {
 
     @Test
     void createLoanApplication_Success() {
-        when(jwtUtil.extractUsername(anyString())).thenReturn("test@example.com");
-        when(clientService.getClientByEmail("test@example.com")).thenReturn(Optional.of(client));
+        when(jwtService.extractUserId(anyString())).thenReturn(
+            UUID.fromString("4ba6cdd2-33c1-4573-ad1e-1a783d3b3924")
+        );
+        when(clientService.findClientById(UUID.fromString("4ba6cdd2-33c1-4573-ad1e-1a783d3b3924")))
+            .thenReturn(Optional.of(client));
         when(accountService.getAccountByAccountNumber("444394438340549")).thenReturn(account);
         when(loanRepository.save(any(Loan.class))).thenReturn(new Loan());
         when(
@@ -106,8 +109,11 @@ public class CreateLoanTests {
 
     @Test
     void createLoanApplication_ClientNotFound() {
-        when(jwtUtil.extractUsername(anyString())).thenReturn("test@example.com");
-        when(clientService.getClientByEmail("test@example.com")).thenReturn(Optional.empty());
+        when(jwtService.extractUserId(anyString())).thenReturn(
+            UUID.fromString("4ba6cdd2-33c1-4573-ad1e-1a783d3b3924")
+        );
+        when(clientService.findClientById(UUID.fromString("4ba6cdd2-33c1-4573-ad1e-1a783d3b3924")))
+            .thenReturn(Optional.empty());
 
         assertThrows(
             ClientNotFound.class,
@@ -117,8 +123,11 @@ public class CreateLoanTests {
 
     @Test
     void connectAccountToLoan_AccountNotFound() {
-        when(jwtUtil.extractUsername(anyString())).thenReturn("test@example.com");
-        when(clientService.getClientByEmail("test@example.com")).thenReturn(Optional.of(client));
+        when(jwtService.extractUserId(anyString())).thenReturn(
+            UUID.fromString("4ba6cdd2-33c1-4573-ad1e-1a783d3b3924")
+        );
+        when(clientService.findClientById(UUID.fromString("4ba6cdd2-33c1-4573-ad1e-1a783d3b3924")))
+            .thenReturn(Optional.of(client));
         when(accountService.getAccountByAccountNumber("444394438340549")).thenThrow(
             new AccountNotFound()
         );
@@ -133,8 +142,11 @@ public class CreateLoanTests {
 
     @Test
     void connectAccountToLoan_AccountNotActive() {
-        when(jwtUtil.extractUsername(anyString())).thenReturn("test@example.com");
-        when(clientService.getClientByEmail("test@example.com")).thenReturn(Optional.of(client));
+        when(jwtService.extractUserId(anyString())).thenReturn(
+            UUID.fromString("4ba6cdd2-33c1-4573-ad1e-1a783d3b3924")
+        );
+        when(clientService.findClientById(UUID.fromString("4ba6cdd2-33c1-4573-ad1e-1a783d3b3924")))
+            .thenReturn(Optional.of(client));
 
         when(accountService.getAccountByAccountNumber("444394438340549")).thenReturn(account);
         when(userService.isPhoneNumberValid(anyString())).thenReturn(true);
@@ -150,8 +162,11 @@ public class CreateLoanTests {
 
     @Test
     void connectAccountToLoan_Success() {
-        when(jwtUtil.extractUsername(anyString())).thenReturn("test@example.com");
-        when(clientService.getClientByEmail("test@example.com")).thenReturn(Optional.of(client));
+        when(jwtService.extractUserId(anyString())).thenReturn(
+            UUID.fromString("4ba6cdd2-33c1-4573-ad1e-1a783d3b3924")
+        );
+        when(clientService.findClientById(UUID.fromString("4ba6cdd2-33c1-4573-ad1e-1a783d3b3924")))
+            .thenReturn(Optional.of(client));
 
         when(accountService.getAccountByAccountNumber("444394438340549")).thenReturn(account);
         when(userService.isPhoneNumberValid(anyString())).thenReturn(true);
@@ -181,8 +196,12 @@ public class CreateLoanTests {
 
     @Test
     void connectAccountToLoan_notCorrectClient() {
-        when(jwtUtil.extractUsername(anyString())).thenReturn("test@example.com");
-        when(clientService.getClientByEmail("test@example.com")).thenReturn(Optional.of(client));
+        Client client = new Client();
+        client.setEmail("test@test.ru");
+        UUID clientId = UUID.randomUUID();
+        client.setId(clientId);
+        when(jwtService.extractUserId(any())).thenReturn(clientId);
+        when(clientService.findClientById(clientId)).thenReturn(Optional.of(client));
 
         when(accountService.getAccountByAccountNumber("444394438340549")).thenReturn(account);
         when(userService.isPhoneNumberValid(anyString())).thenReturn(true);
@@ -198,8 +217,11 @@ public class CreateLoanTests {
 
     @Test
     void generateLoanNumber_Success() {
-        when(jwtUtil.extractUsername(anyString())).thenReturn("test@example.com");
-        when(clientService.getClientByEmail("test@example.com")).thenReturn(Optional.of(client));
+        when(jwtService.extractUserId(anyString())).thenReturn(
+            UUID.fromString("4ba6cdd2-33c1-4573-ad1e-1a783d3b3924")
+        );
+        when(clientService.findClientById(UUID.fromString("4ba6cdd2-33c1-4573-ad1e-1a783d3b3924")))
+            .thenReturn(Optional.of(client));
 
         when(accountService.getAccountByAccountNumber("444394438340549")).thenReturn(account);
         when(userService.isPhoneNumberValid(anyString())).thenReturn(true);
@@ -223,8 +245,11 @@ public class CreateLoanTests {
 
     @Test
     void generateLoanNumber_DuplicateHandling() {
-        when(jwtUtil.extractUsername(anyString())).thenReturn("test@example.com");
-        when(clientService.getClientByEmail("test@example.com")).thenReturn(Optional.of(client));
+        when(jwtService.extractUserId(anyString())).thenReturn(
+            UUID.fromString("4ba6cdd2-33c1-4573-ad1e-1a783d3b3924")
+        );
+        when(clientService.findClientById(UUID.fromString("4ba6cdd2-33c1-4573-ad1e-1a783d3b3924")))
+            .thenReturn(Optional.of(client));
 
         when(accountService.getAccountByAccountNumber("444394438340549")).thenReturn(account);
         when(userService.isPhoneNumberValid(anyString())).thenReturn(true);

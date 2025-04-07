@@ -10,7 +10,7 @@ import lombok.*;
 import lombok.experimental.SuperBuilder;
 import org.hibernate.proxy.HibernateProxy;
 import rs.banka4.rafeisen.common.security.Privilege;
-import rs.banka4.user_service.security.UserType;
+import rs.banka4.rafeisen.common.security.UserType;
 
 @MappedSuperclass
 @Getter

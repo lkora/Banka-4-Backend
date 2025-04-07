@@ -24,7 +24,7 @@ public class Order {
     @Column(nullable = false)
     private UUID userId;
 
-    @ManyToOne
+    @ManyToOne(optional = false)
     private Asset asset;
 
     @Enumerated(EnumType.STRING)
@@ -80,4 +80,8 @@ public class Order {
     /** trust me bro reference key */
     @Column(nullable = false)
     private UUID accountId;
+
+    /** did user who bought it, used it */
+    @Column(nullable = false)
+    private boolean used;
 }

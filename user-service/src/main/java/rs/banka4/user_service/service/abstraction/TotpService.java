@@ -13,7 +13,6 @@ import rs.banka4.user_service.exceptions.user.NotFound;
 import rs.banka4.user_service.repositories.ClientRepository;
 import rs.banka4.user_service.repositories.EmployeeRepository;
 import rs.banka4.user_service.repositories.UserTotpSecretRepository;
-import rs.banka4.user_service.utils.JwtUtil;
 
 /**
  * Service implementation for Time-based One-Time Password (TOTP) operations.

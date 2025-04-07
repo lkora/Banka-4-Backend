@@ -26,6 +26,7 @@ public class Stock extends Security {
     private BigDecimal dividendYield;
 
     @Builder.Default
+    @Column(nullable = false)
     private OffsetDateTime createdAt = OffsetDateTime.now();
 
     @Transient

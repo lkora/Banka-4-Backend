@@ -20,9 +20,10 @@ import rs.banka4.user_service.exceptions.user.client.ClientNotFound;
 import rs.banka4.user_service.generator.AccountObjectMother;
 import rs.banka4.user_service.generator.ClientObjectMother;
 import rs.banka4.user_service.repositories.AccountRepository;
+import rs.banka4.user_service.repositories.ClientRepository;
 import rs.banka4.user_service.service.abstraction.ClientService;
+import rs.banka4.user_service.service.abstraction.JwtService;
 import rs.banka4.user_service.service.impl.AccountServiceImpl;
-import rs.banka4.user_service.utils.JwtUtil;
 
 public class AccountServiceGetTests {
 
@@ -31,7 +32,9 @@ public class AccountServiceGetTests {
     @Mock
     private ClientService clientService;
     @Mock
-    private JwtUtil jwtUtil;
+    private JwtService jwtService;
+    @Mock
+    private ClientRepository clientRepository;
     @InjectMocks
     private AccountServiceImpl accountService;
 
@@ -50,8 +53,9 @@ public class AccountServiceGetTests {
         account.setClient(client);
         Set<Account> accounts = Set.of(account);
 
-        when(jwtUtil.extractUsername(token)).thenReturn(email);
-        when(clientService.getClientByEmail(email)).thenReturn(Optional.of(client));
+        when(jwtService.extractUserId(token)).thenReturn(client.getId());
+        when(clientRepository.findById(client.getId())).thenReturn(Optional.of(client));
+        when(clientService.findClientById(client.getId())).thenReturn(Optional.of(client));
         when(accountRepository.findAllByClient(client)).thenReturn(accounts);
 
         // Act
@@ -73,10 +77,11 @@ public class AccountServiceGetTests {
     void testGetAccountsForClientClientNotFound() {
         // Arrange
         String token = "authToken";
-        String email = "client@example.com";
+        UUID clientId = UUID.randomUUID();
 
-        when(jwtUtil.extractUsername(token)).thenReturn(email);
-        when(clientService.getClientByEmail(email)).thenReturn(Optional.empty());
+        when(jwtService.extractUserId(token)).thenReturn(clientId);
+        when(clientRepository.findById(clientId)).thenReturn(Optional.empty());
+        when(clientService.findClientById(clientId)).thenReturn(Optional.empty());
 
         // Act & Assert
         assertThrows(ClientNotFound.class, () -> accountService.getAccountsForClient(token));
@@ -93,7 +98,9 @@ public class AccountServiceGetTests {
         account.setClient(client);
         account.setAccountNumber(accountNumber);
 
-        when(jwtUtil.extractUsername(token)).thenReturn(email);
+        when(jwtService.extractUserId(token)).thenReturn(client.getId());
+        when(clientRepository.findById(client.getId())).thenReturn(Optional.of(client));
+        when(clientService.findClientById(client.getId())).thenReturn(Optional.of(client));
         when(accountRepository.findAccountByAccountNumber(accountNumber)).thenReturn(
             Optional.of(account)
         );
@@ -127,14 +134,17 @@ public class AccountServiceGetTests {
     void testGetAccountIncorrectCredentials() {
         // Arrange
         String token = "authToken";
-        String email = "client@example.com";
         String accountNumber = "123456789";
         Client client = new Client();
+        Client client2 = new Client();
         client.setEmail("other@example.com");
+        client2.setEmail("other2@example.com");
         Account account = new Account();
-        account.setClient(client);
+        account.setClient(client2);
 
-        when(jwtUtil.extractUsername(token)).thenReturn(email);
+        when(jwtService.extractUserId(token)).thenReturn(client.getId());
+        when(clientRepository.findById(client.getId())).thenReturn(Optional.of(client));
+        when(clientService.findClientById(client.getId())).thenReturn(Optional.of(client));
         when(accountRepository.findAccountByAccountNumber(accountNumber)).thenReturn(
             Optional.of(account)
         );

@@ -5,6 +5,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 import java.util.Optional;
+import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
@@ -29,8 +30,8 @@ import rs.banka4.user_service.repositories.CurrencyRepository;
 import rs.banka4.user_service.service.abstraction.ClientService;
 import rs.banka4.user_service.service.abstraction.CompanyService;
 import rs.banka4.user_service.service.abstraction.EmployeeService;
+import rs.banka4.user_service.service.abstraction.JwtService;
 import rs.banka4.user_service.service.impl.AccountServiceImpl;
-import rs.banka4.user_service.utils.JwtUtil;
 
 public class AccountServiceCreateTests {
 
@@ -47,7 +48,7 @@ public class AccountServiceCreateTests {
     @Mock
     private EmployeeService employeeService;
     @Mock
-    private JwtUtil jwtUtil;
+    private JwtService jwtService;
     @InjectMocks
     private AccountServiceImpl accountService;
 
@@ -80,8 +81,14 @@ public class AccountServiceCreateTests {
             AccountObjectMother.generateBasicFromAccount()
                 .getClient()
         );
-        when(jwtUtil.extractUsername("authToken")).thenReturn("employee@example.com");
-        when(employeeService.findEmployeeByEmail("employee@example.com")).thenReturn(
+        when(jwtService.extractUserId("authToken")).thenReturn(
+            UUID.fromString("35bc1ef6-f6d0-4405-bcdb-7dc0686b7b87")
+        );
+        when(
+            employeeService.findEmployeeById(
+                UUID.fromString("35bc1ef6-f6d0-4405-bcdb-7dc0686b7b87")
+            )
+        ).thenReturn(
             Optional.of(
                 AccountObjectMother.generateBasicFromAccount()
                     .getEmployee()
@@ -116,7 +123,9 @@ public class AccountServiceCreateTests {
             AccountObjectMother.generateBasicFromAccount()
                 .getClient()
         );
-        when(jwtUtil.extractUsername("authToken")).thenReturn("employee@example.com");
+        when(jwtService.extractUserId("authToken")).thenReturn(
+            UUID.fromString("35bc1ef6-f6d0-4405-bcdb-7dc0686b7b87")
+        );
         when(employeeService.findEmployeeByEmail("employee@example.com")).thenReturn(
             Optional.of(
                 AccountObjectMother.generateBasicFromAccount()
@@ -143,7 +152,9 @@ public class AccountServiceCreateTests {
         doThrow(new ClientNotFound("client@example.com")).when(clientService)
             .createClient(dto.client());
 
-        when(jwtUtil.extractUsername("authToken")).thenReturn("employee@example.com");
+        when(jwtService.extractUserId("authToken")).thenReturn(
+            UUID.fromString("35bc1ef6-f6d0-4405-bcdb-7dc0686b7b87")
+        );
         when(employeeService.findEmployeeByEmail("employee@example.com")).thenReturn(
             Optional.of(
                 AccountObjectMother.generateBasicFromAccount()
@@ -187,10 +198,8 @@ public class AccountServiceCreateTests {
             )
         ).thenReturn(Optional.of(client));
         when(clientService.createClient(dto.client())).thenReturn(client);
-        when(jwtUtil.extractUsername("authToken")).thenReturn("employee@example.com");
-        when(employeeService.findEmployeeByEmail("employee@example.com")).thenReturn(
-            Optional.of(employee)
-        );
+        when(jwtService.extractUserId("authToken")).thenReturn(employee.getId());
+        when(employeeService.findEmployeeById(employee.getId())).thenReturn(Optional.of(employee));
         when(
             companyService.getCompany(
                 dto.company()
@@ -237,7 +246,9 @@ public class AccountServiceCreateTests {
             )
         ).thenReturn(Optional.of(client));
         when(clientService.createClient(dto.client())).thenReturn(client);
-        when(jwtUtil.extractUsername("authToken")).thenReturn("employee@example.com");
+        when(jwtService.extractUserId("authToken")).thenReturn(
+            UUID.fromString("35bc1ef6-f6d0-4405-bcdb-7dc0686b7b87")
+        );
         when(employeeService.findEmployeeByEmail("employee@example.com")).thenReturn(
             Optional.of(employee)
         );
@@ -275,7 +286,9 @@ public class AccountServiceCreateTests {
             )
         ).thenReturn(Optional.of(client));
         when(clientService.createClient(dto.client())).thenReturn(client);
-        when(jwtUtil.extractUsername("authToken")).thenReturn("employee@example.com");
+        when(jwtService.extractUserId("authToken")).thenReturn(
+            UUID.fromString("35bc1ef6-f6d0-4405-bcdb-7dc0686b7b87")
+        );
         when(employeeService.findEmployeeByEmail("employee@example.com")).thenReturn(
             Optional.empty()
         );
@@ -306,10 +319,8 @@ public class AccountServiceCreateTests {
             )
         ).thenReturn(Optional.of(client));
         when(clientService.createClient(dto.client())).thenReturn(client);
-        when(jwtUtil.extractUsername("authToken")).thenReturn("employee@example.com");
-        when(employeeService.findEmployeeByEmail("employee@example.com")).thenReturn(
-            Optional.of(employee)
-        );
+        when(jwtService.extractUserId("authToken")).thenReturn(employee.getId());
+        when(employeeService.findEmployeeById(employee.getId())).thenReturn(Optional.of(employee));
 
         doThrow(new DataIntegrityViolationException("Duplicate account number")).doAnswer(
             invocation -> null
@@ -349,10 +360,8 @@ public class AccountServiceCreateTests {
 
         when(clientService.createClient(dto.client())).thenReturn(client);
         when(companyService.getCompany(anyString())).thenReturn(Optional.of(company));
-        when(jwtUtil.extractUsername("authToken")).thenReturn("employee@example.com");
-        when(employeeService.findEmployeeByEmail("employee@example.com")).thenReturn(
-            Optional.of(employee)
-        );
+        when(jwtService.extractUserId("authToken")).thenReturn(employee.getId());
+        when(employeeService.findEmployeeById(employee.getId())).thenReturn(Optional.of(employee));
 
         accountService.createAccount(dto, "authToken");
 

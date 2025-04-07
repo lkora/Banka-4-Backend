@@ -4,8 +4,8 @@ import jakarta.transaction.Transactional;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
-import java.util.stream.Collectors;
 import javax.annotation.Nullable;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Primary;
@@ -38,8 +38,8 @@ import rs.banka4.user_service.repositories.AccountRepository;
 import rs.banka4.user_service.repositories.CardRepository;
 import rs.banka4.user_service.repositories.ClientRepository;
 import rs.banka4.user_service.service.abstraction.CardService;
+import rs.banka4.user_service.service.abstraction.JwtService;
 import rs.banka4.user_service.service.abstraction.TotpService;
-import rs.banka4.user_service.utils.JwtUtil;
 import rs.banka4.user_service.utils.specification.CardSpecification;
 import rs.banka4.user_service.utils.specification.SpecificationCombinator;
 
@@ -50,7 +50,7 @@ public class CardServiceImpl implements CardService {
     private final CardRepository cardRepository;
     private final AccountRepository accountRepository;
     private final TotpService totpService;
-    private final JwtUtil jwtUtil;
+    private final JwtService jwtService;
     private final ClientRepository clientRepository;
     private final UserService userService;
 
@@ -102,9 +102,8 @@ public class CardServiceImpl implements CardService {
         }
 
         Card card = optionalCard.get();
-        String role = jwtUtil.extractRole(token);
-        String userId = jwtUtil.extractClaim(token, claims -> claims.get("id", String.class));
-        String email = jwtUtil.extractUsername(token);
+        String role = jwtService.extractRole(token);
+        UUID userId = jwtService.extractUserId(token);
 
         if ("client".equalsIgnoreCase(role)) {
             if (
@@ -116,17 +115,12 @@ public class CardServiceImpl implements CardService {
             ) {
                 return null;
             }
-            String ownerId =
+            UUID ownerId =
                 card.getAccount()
                     .getClient()
-                    .getId()
-                    .toString();
-            String ownerEmail =
-                card.getAccount()
-                    .getClient()
-                    .getEmail();
+                    .getId();
 
-            if (!userId.equals(ownerId) && !email.equals(ownerEmail)) {
+            if (!userId.equals(ownerId)) {
                 return null;
             }
         }
@@ -148,7 +142,7 @@ public class CardServiceImpl implements CardService {
         }
 
         Card card = optionalCard.get();
-        String role = jwtUtil.extractRole(token);
+        String role = jwtService.extractRole(token);
 
         if (!"employee".equalsIgnoreCase(role)) {
             return null;
@@ -171,7 +165,7 @@ public class CardServiceImpl implements CardService {
         }
 
         Card card = optionalCard.get();
-        String role = jwtUtil.extractRole(token);
+        String role = jwtService.extractRole(token);
 
         if (!"employee".equalsIgnoreCase(role)) {
             return null;
@@ -193,23 +187,28 @@ public class CardServiceImpl implements CardService {
         Pageable pageable
     ) {
 
-        String email = jwtUtil.extractUsername(token);
+        UUID clientId = jwtService.extractUserId(token);
 
-        Optional<Client> client = clientRepository.findByEmail(email);
+        Optional<Client> client = clientRepository.findById(clientId);
 
-        if (client.isEmpty()) throw new ClientNotFound(email);
+        if (client.isEmpty()) throw new ClientNotFound(clientId.toString());
 
         Set<Account> accounts = accountRepository.findAllByClient(client.get());
 
-        boolean found =
-            accounts.stream()
-                .map(Account::getAccountNumber)
-                .collect(Collectors.toSet())
-                .contains(accountNumber);
+        List<Card> clientCards;
 
-        if (!found) throw new NotAccountOwner();
+        if (accountNumber != null) {
+            boolean found =
+                accounts.stream()
+                    .map(Account::getAccountNumber)
+                    .anyMatch(accountNumber::equals);
 
-        List<Card> clientCards = cardRepository.findByAccountAccountNumber(accountNumber);
+            if (!found) throw new NotAccountOwner();
+
+            clientCards = cardRepository.findByAccountAccountNumber(accountNumber);
+        } else {
+            clientCards = cardRepository.findByAccount_Client(client.get());
+        }
 
         List<CardDto> cardDtos =
             clientCards.stream()
@@ -235,8 +234,8 @@ public class CardServiceImpl implements CardService {
     ) {
 
         if (
-            !jwtUtil.extractRole(token)
-                .equals("employee")
+            !jwtService.extractRole(token)
+                .equalsIgnoreCase("employee")
         ) throw new NotAuthenticated();
 
         if (pageable == null) {

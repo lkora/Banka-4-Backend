@@ -1,6 +1,7 @@
 package rs.banka4.user_service.service.impl;
 
 import java.util.List;
+import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -22,7 +23,7 @@ import rs.banka4.user_service.repositories.ClientRepository;
 import rs.banka4.user_service.repositories.CompanyRepository;
 import rs.banka4.user_service.repositories.TransactionRepository;
 import rs.banka4.user_service.service.abstraction.BankAccountService;
-import rs.banka4.user_service.utils.JwtUtil;
+import rs.banka4.user_service.service.abstraction.JwtService;
 
 @Service
 @RequiredArgsConstructor
@@ -34,7 +35,7 @@ public class BankAccountServiceImpl implements BankAccountService {
     private final ClientRepository clientRepository;
     private final AccountRepository accountRepository;
     private final TransactionRepository transactionRepository;
-    private final JwtUtil jwtUtil;
+    private final JwtService jwtService;
 
     public List<Account> getBankAccounts() {
         Company bank =
@@ -61,14 +62,14 @@ public class BankAccountServiceImpl implements BankAccountService {
         Authentication authentication,
         PageRequest pageRequest
     ) {
-        String email =
-            jwtUtil.extractUsername(
+        UUID clientId =
+            jwtService.extractUserId(
                 authentication.getCredentials()
                     .toString()
             );
         Client client =
-            clientRepository.findByEmail(email)
-                .orElseThrow(() -> new UserNotFound(email));
+            clientRepository.findById(clientId)
+                .orElseThrow(() -> new UserNotFound(clientId.toString()));
 
         Company bank =
             companyRepository.findByName(BANK_COMPANY_NAME)

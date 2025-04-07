@@ -18,22 +18,22 @@ import rs.banka4.user_service.exceptions.user.client.ClientNotFound;
 import rs.banka4.user_service.repositories.ClientContactRepository;
 import rs.banka4.user_service.repositories.ClientRepository;
 import rs.banka4.user_service.service.abstraction.ClientContactService;
-import rs.banka4.user_service.utils.JwtUtil;
+import rs.banka4.user_service.service.abstraction.JwtService;
 
 @Service
 @RequiredArgsConstructor
 public class ClientContactServiceImpl implements ClientContactService {
 
-    private final JwtUtil jwtUtil;
+    private final JwtService jwtService;
     private final ClientContactRepository clientContactRepository;
     private final ClientRepository clientRepository;
 
     @Override
     public Page<ClientContactDto> getAllClientContacts(String token, Pageable pageable) {
-        String email = jwtUtil.extractUsername(token);
+        UUID clientId = jwtService.extractUserId(token);
         Client client =
-            clientRepository.findByEmail(email)
-                .orElseThrow(() -> new ClientNotFound(email));
+            clientRepository.findById(clientId)
+                .orElseThrow(() -> new ClientNotFound(clientId.toString()));
 
         Page<ClientContact> clientContacts =
             clientContactRepository.findAllActive(pageable, client);
@@ -42,10 +42,10 @@ public class ClientContactServiceImpl implements ClientContactService {
 
     @Override
     public List<ClientContactDto> getClientContacts(String token) {
-        String email = jwtUtil.extractUsername(token);
+        UUID clientId = jwtService.extractUserId(token);
         Client client =
-            clientRepository.findByEmail(email)
-                .orElseThrow(() -> new ClientNotFound(email));
+            clientRepository.findById(clientId)
+                .orElseThrow(() -> new ClientNotFound(clientId.toString()));
 
         List<ClientContact> clientContacts = clientContactRepository.findByClient(client);
         return clientContacts.stream()
@@ -55,10 +55,10 @@ public class ClientContactServiceImpl implements ClientContactService {
 
     @Override
     public ClientContactDto getSpecificClientContact(String token, UUID id) {
-        String email = jwtUtil.extractUsername(token);
+        UUID clientId = jwtService.extractUserId(token);
         Client client =
-            clientRepository.findByEmail(email)
-                .orElseThrow(() -> new ClientNotFound(email));
+            clientRepository.findById(clientId)
+                .orElseThrow(() -> new ClientNotFound(clientId.toString()));
 
         ClientContact clientContact =
             clientContactRepository.findById(id)
@@ -76,10 +76,10 @@ public class ClientContactServiceImpl implements ClientContactService {
 
     @Override
     public void createClientContact(String token, ClientContactRequest request) {
-        String email = jwtUtil.extractUsername(token);
+        UUID clientId = jwtService.extractUserId(token);
         Client client =
-            clientRepository.findByEmail(email)
-                .orElseThrow(() -> new ClientNotFound(email));
+            clientRepository.findById(clientId)
+                .orElseThrow(() -> new ClientNotFound(clientId.toString()));
 
         ClientContact clientContact = ClientContactMapper.INSTANCE.toEntity(request);
         clientContact.setClient(client);
@@ -89,10 +89,10 @@ public class ClientContactServiceImpl implements ClientContactService {
 
     @Override
     public void updateClientContact(String token, UUID id, ClientContactRequest request) {
-        String email = jwtUtil.extractUsername(token);
+        UUID clientId = jwtService.extractUserId(token);
         Client client =
-            clientRepository.findByEmail(email)
-                .orElseThrow(() -> new ClientNotFound(email));
+            clientRepository.findById(clientId)
+                .orElseThrow(() -> new ClientNotFound(clientId.toString()));
 
         ClientContact clientContact =
             clientContactRepository.findById(id)
@@ -111,10 +111,10 @@ public class ClientContactServiceImpl implements ClientContactService {
 
     @Override
     public void deleteClientContact(String token, UUID contactId) {
-        String email = jwtUtil.extractUsername(token);
+        UUID clientId = jwtService.extractUserId(token);
         Client client =
-            clientRepository.findByEmail(email)
-                .orElseThrow(() -> new ClientNotFound(email));
+            clientRepository.findById(clientId)
+                .orElseThrow(() -> new ClientNotFound(clientId.toString()));
 
         ClientContact clientContact =
             clientContactRepository.findById(contactId)

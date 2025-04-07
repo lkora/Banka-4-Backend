@@ -37,9 +37,9 @@ import rs.banka4.user_service.repositories.AccountRepository;
 import rs.banka4.user_service.repositories.ClientContactRepository;
 import rs.banka4.user_service.repositories.ClientRepository;
 import rs.banka4.user_service.repositories.TransactionRepository;
+import rs.banka4.user_service.service.abstraction.JwtService;
 import rs.banka4.user_service.service.abstraction.TotpService;
 import rs.banka4.user_service.service.abstraction.TransactionService;
-import rs.banka4.user_service.utils.JwtUtil;
 import rs.banka4.user_service.utils.specification.PaymentSpecification;
 import rs.banka4.user_service.utils.specification.SpecificationCombinator;
 
@@ -54,7 +54,7 @@ public class TransactionServiceImpl implements TransactionService {
     private final TotpService totpService;
     private final ExchangeRateService exchangeRateService;
     private final BankAccountServiceImpl bankAccountServiceImpl;
-    private final JwtUtil jwtUtil;
+    private final JwtService jwtService;
     private final EntityManager entityManager;
 
     @Override
@@ -173,7 +173,7 @@ public class TransactionServiceImpl implements TransactionService {
         }
 
         Client client =
-            clientRepository.findByEmail(jwtUtil.extractUsername(token))
+            clientRepository.findById(jwtService.extractUserId(token))
                 .orElseThrow(NotFound::new);
         if (
             !bankAccountServiceImpl.getBankOwner()
@@ -203,10 +203,10 @@ public class TransactionServiceImpl implements TransactionService {
 
     @Override
     public Page<TransactionDto> getAllTransfersForClient(String token, PageRequest pageRequest) {
-        String email = jwtUtil.extractUsername(token);
+        UUID clientId = jwtService.extractUserId(token);
         Client client =
-            clientRepository.findByEmail(email)
-                .orElseThrow(() -> new UserNotFound(email));
+            clientRepository.findById(clientId)
+                .orElseThrow(() -> new UserNotFound(clientId.toString()));
 
         Page<Transaction> transactions =
             transactionRepository.findAllByFromAccount_ClientAndIsTransferTrue(client, pageRequest);
@@ -235,13 +235,13 @@ public class TransactionServiceImpl implements TransactionService {
 
     // Private methods
     private Client getClient(Authentication authentication) {
-        String email =
-            jwtUtil.extractUsername(
+        UUID clientId =
+            jwtService.extractUserId(
                 authentication.getCredentials()
                     .toString()
             );
-        return clientRepository.findByEmail(email)
-            .orElseThrow(() -> new UserNotFound(email));
+        return clientRepository.findById(clientId)
+            .orElseThrow(() -> new UserNotFound(clientId.toString()));
     }
 
     private Account getAccount(String accountNumber) {

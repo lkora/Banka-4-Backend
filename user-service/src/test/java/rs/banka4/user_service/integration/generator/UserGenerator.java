@@ -2,6 +2,7 @@ package rs.banka4.user_service.integration.generator;
 
 import java.time.LocalDate;
 import java.util.HashSet;
+import java.util.UUID;
 import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Service;
 import rs.banka4.user_service.domain.auth.dtos.LoginDto;
@@ -12,6 +13,7 @@ import rs.banka4.user_service.domain.user.client.db.Client;
 import rs.banka4.user_service.domain.user.employee.db.Employee;
 import rs.banka4.user_service.repositories.ClientRepository;
 import rs.banka4.user_service.repositories.EmployeeRepository;
+import rs.banka4.user_service.service.abstraction.ClientService;
 import rs.banka4.user_service.service.abstraction.EmployeeService;
 
 /**
@@ -88,6 +90,32 @@ public class UserGenerator {
         employeeRepo.flush();
     }
 
+    public void createEmployeeLogin(UserCustomizer<Employee.EmployeeBuilder<?, ?>> customizer) {
+        employeeRepo.save(
+            customizer.apply(
+                /* Keep in sync with the Javadoc above. */
+                Employee.builder()
+                    .id(UUID.fromString("6ea50113-da6f-4693-b9d3-ac27f807d7f5"))
+                    .firstName("John")
+                    .lastName("Doe")
+                    .dateOfBirth(LocalDate.of(1990, 1, 1))
+                    .gender(Gender.MALE)
+                    .email("john.doe@example.com")
+                    .phone("+381670123654")
+                    .address("123 Main St")
+                    .password(TEST_PASSWORD_HASH)
+                    .username("johndoe")
+                    .position("Developer")
+                    .department("IT")
+                    .active(true)
+                    .enabled(true)
+                    .permissionBits(1L)
+            )
+                .build()
+        );
+        employeeRepo.flush();
+    }
+
     private final EmployeeService employeeService;
 
     /**
@@ -103,6 +131,21 @@ public class UserGenerator {
         return employeeService.login(new LoginDto(email, password));
     }
 
+    private final ClientService clientService;
+
+    /**
+     * Create and return the response of a login request for a client with email {@code email} and
+     * password {@code password}.
+     *
+     * @param email Client email.
+     * @param password Client password.
+     * @throws Throwable If login fails.
+     * @returns Tokens produced by logging in.
+     */
+    public LoginResponseDto doClientLogin(String email, String password) {
+        return clientService.login(new LoginDto(email, password));
+    }
+
     private ClientRepository clientRepo;
 
     /**
@@ -113,6 +156,7 @@ public class UserGenerator {
      *
      * {@snippet :
      * Client.builder()
+     *     .id(UUID.fromString("6f72db23-afc8-4d71-b392-eb9e626ed9af"))
      *     .firstName("John")
      *     .lastName("Doe")
      *     .dateOfBirth(LocalDate.of(1990, 1, 1))
@@ -135,6 +179,7 @@ public class UserGenerator {
             customizer.apply(
                 /* Keep in sync with the Javadoc above. */
                 Client.builder()
+                    .id(UUID.fromString("6f72db23-afc8-4d71-b392-eb9e626ed9af"))
                     .firstName("John")
                     .lastName("Doe")
                     .dateOfBirth(LocalDate.of(1990, 1, 1))

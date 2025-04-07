@@ -2,7 +2,9 @@ package rs.banka4.user_service.unit.account;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.ArgumentMatchers.any;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -23,8 +25,8 @@ import rs.banka4.user_service.exceptions.account.AccountNotFound;
 import rs.banka4.user_service.exceptions.account.InvalidAccountOperation;
 import rs.banka4.user_service.exceptions.account.NotAccountOwner;
 import rs.banka4.user_service.repositories.AccountRepository;
+import rs.banka4.user_service.service.abstraction.JwtService;
 import rs.banka4.user_service.service.impl.AccountServiceImpl;
-import rs.banka4.user_service.utils.JwtUtil;
 
 @ExtendWith(MockitoExtension.class)
 class AccountServiceImplSetLimitsTest {
@@ -33,7 +35,7 @@ class AccountServiceImplSetLimitsTest {
     private AccountRepository accountRepository;
 
     @Mock
-    private JwtUtil jwtUtil;
+    private JwtService jwtService;
 
     @InjectMocks
     private AccountServiceImpl accountService;
@@ -62,6 +64,9 @@ class AccountServiceImplSetLimitsTest {
                 .dailyLimit(BigDecimal.ZERO)
                 .monthlyLimit(BigDecimal.ZERO)
                 .build();
+
+        lenient().when(jwtService.extractUserId(anyString()))
+            .thenReturn(ownerClient.getId());
     }
 
     @Test
@@ -73,10 +78,6 @@ class AccountServiceImplSetLimitsTest {
 
         when(accountRepository.findAccountByAccountNumber(accountNumber)).thenReturn(
             Optional.of(validAccount)
-        );
-        when(jwtUtil.extractClaim(any(), any())).thenReturn(
-            ownerClient.getId()
-                .toString()
         );
 
         // Act
@@ -106,21 +107,21 @@ class AccountServiceImplSetLimitsTest {
     @Test
     void setAccountLimits_UnauthorizedAccess() {
         // Arrange
+        Account account = new Account();
+        account.setId(UUID.randomUUID());
+        account.setClient(new Client());
         String accountNumber = "4440001123456789020";
         SetAccountLimitsDto dto = new SetAccountLimitsDto(BigDecimal.TEN, BigDecimal.TEN, "123456");
 
         when(accountRepository.findAccountByAccountNumber(accountNumber)).thenReturn(
-            Optional.of(validAccount)
-        );
-        when(jwtUtil.extractClaim(any(), any())).thenReturn(
-            UUID.randomUUID()
-                .toString()
+            Optional.of(account)
         );
 
         // Act & Assert
-        assertThatThrownBy(
+        assertThrows(
+            NotAccountOwner.class,
             () -> accountService.setAccountLimits(accountNumber, dto, "invalid.token")
-        ).isInstanceOf(NotAccountOwner.class);
+        );
     }
 
     @Test
@@ -132,10 +133,6 @@ class AccountServiceImplSetLimitsTest {
 
         when(accountRepository.findAccountByAccountNumber(accountNumber)).thenReturn(
             Optional.of(validAccount)
-        );
-        when(jwtUtil.extractClaim(any(), any())).thenReturn(
-            ownerClient.getId()
-                .toString()
         );
 
         // Act & Assert
@@ -156,10 +153,6 @@ class AccountServiceImplSetLimitsTest {
         when(accountRepository.findAccountByAccountNumber(accountNumber)).thenReturn(
             Optional.of(validAccount)
         );
-        when(jwtUtil.extractClaim(any(), any())).thenReturn(
-            ownerClient.getId()
-                .toString()
-        );
 
         // Act & Assert
         assertThatThrownBy(() -> accountService.setAccountLimits(accountNumber, dto, "valid.token"))
@@ -178,10 +171,6 @@ class AccountServiceImplSetLimitsTest {
 
         when(accountRepository.findAccountByAccountNumber(accountNumber)).thenReturn(
             Optional.of(validAccount)
-        );
-        when(jwtUtil.extractClaim(any(), any())).thenReturn(
-            ownerClient.getId()
-                .toString()
         );
 
         // Act

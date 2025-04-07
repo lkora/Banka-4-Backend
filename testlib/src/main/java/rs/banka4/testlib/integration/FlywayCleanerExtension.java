@@ -5,8 +5,8 @@ import org.junit.jupiter.api.extension.BeforeEachCallback;
 import org.junit.jupiter.api.extension.ExtensionContext;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 
-/** JUnit Jupiter extension that automatically runs a Flyway clean and
- *  re-migration before each test.
+/**
+ * JUnit Jupiter extension that automatically runs a Flyway clean and re-migration before each test.
  */
 public class FlywayCleanerExtension implements BeforeEachCallback {
     @Override
@@ -14,7 +14,7 @@ public class FlywayCleanerExtension implements BeforeEachCallback {
         var ctx = SpringExtension.getApplicationContext(context);
         var flyway = ctx.getBean(Flyway.class);
 
-        /* Relies on application.yml setting spring.flyway.clean-disabled.  */
+        /* Relies on application.yml setting spring.flyway.clean-disabled. */
         flyway.clean();
         flyway.migrate();
     }

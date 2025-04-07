@@ -9,6 +9,7 @@ import static org.mockito.Mockito.when;
 
 import java.time.LocalDate;
 import java.util.Optional;
+import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -28,10 +29,10 @@ import rs.banka4.user_service.exceptions.card.CardLimitExceededException;
 import rs.banka4.user_service.exceptions.card.DuplicateAuthorizationException;
 import rs.banka4.user_service.repositories.AccountRepository;
 import rs.banka4.user_service.repositories.CardRepository;
+import rs.banka4.user_service.service.abstraction.JwtService;
 import rs.banka4.user_service.service.impl.CardServiceImpl;
 import rs.banka4.user_service.service.impl.TotpServiceImpl;
 import rs.banka4.user_service.service.impl.UserService;
-import rs.banka4.user_service.utils.JwtUtil;
 
 @ExtendWith(MockitoExtension.class)
 public class CardServiceTests {
@@ -39,8 +40,7 @@ public class CardServiceTests {
     @Mock
     private CardRepository cardRepository;
     @Mock
-    private JwtUtil jwtUtil;
-
+    private JwtService jwtService;
 
     @Mock
     private AccountRepository accountRepository;
@@ -142,9 +142,10 @@ public class CardServiceTests {
         when(cardRepository.findCardByCardNumber(card.getCardNumber())).thenReturn(
             Optional.of(card)
         );
-        when(jwtUtil.extractRole(token)).thenReturn("client");
-        when(jwtUtil.extractClaim(eq(token), any())).thenReturn("wrong-id");
-        when(jwtUtil.extractUsername(token)).thenReturn("wrong-email");
+        when(jwtService.extractRole(token)).thenReturn("client");
+        when(jwtService.extractUserId(token)).thenReturn(
+            UUID.fromString("550e8400-e29b-41d4-a716-446655440000")
+        );
 
         Card blockedCard = cardService.blockCard(card.getCardNumber(), token);
         assertNull(blockedCard);
@@ -165,7 +166,7 @@ public class CardServiceTests {
         when(cardRepository.findCardByCardNumber(card.getCardNumber())).thenReturn(
             Optional.of(card)
         );
-        when(jwtUtil.extractRole(token)).thenReturn("client");
+        when(jwtService.extractRole(token)).thenReturn("client");
 
         Card unblockedCard = cardService.unblockCard(card.getCardNumber(), token);
         assertNull(unblockedCard);
@@ -197,7 +198,7 @@ public class CardServiceTests {
         when(cardRepository.findCardByCardNumber(card.getCardNumber())).thenReturn(
             Optional.of(card)
         );
-        when(jwtUtil.extractRole(token)).thenReturn("client");
+        when(jwtService.extractRole(token)).thenReturn("client");
 
         Card deactivatedCard = cardService.deactivateCard(card.getCardNumber(), token);
         assertNull(deactivatedCard);

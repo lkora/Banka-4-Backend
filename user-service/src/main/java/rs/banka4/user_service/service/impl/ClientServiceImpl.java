@@ -9,6 +9,8 @@ import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import rs.banka4.rafeisen.common.security.AuthenticatedBankUserAuthentication;
+import rs.banka4.rafeisen.common.security.UserType;
 import rs.banka4.user_service.domain.account.dtos.AccountClientIdDto;
 import rs.banka4.user_service.domain.auth.dtos.LoginDto;
 import rs.banka4.user_service.domain.auth.dtos.LoginResponseDto;
@@ -23,12 +25,10 @@ import rs.banka4.user_service.exceptions.user.client.NonexistantSortByField;
 import rs.banka4.user_service.exceptions.user.client.NotActivated;
 import rs.banka4.user_service.repositories.ClientRepository;
 import rs.banka4.user_service.repositories.UserTotpSecretRepository;
-import rs.banka4.user_service.security.AuthenticatedBankUserAuthentication;
 import rs.banka4.user_service.security.PreAuthBankUserAuthentication;
 import rs.banka4.user_service.security.UnauthenticatedBankUserPrincipal;
-import rs.banka4.user_service.security.UserType;
 import rs.banka4.user_service.service.abstraction.ClientService;
-import rs.banka4.user_service.utils.JwtUtil;
+import rs.banka4.user_service.service.abstraction.JwtService;
 import rs.banka4.user_service.utils.specification.ClientSpecification;
 import rs.banka4.user_service.utils.specification.SpecificationCombinator;
 
@@ -38,10 +38,10 @@ public class ClientServiceImpl implements ClientService {
 
     private final UserService userService;
     private final ClientRepository clientRepository;
-    private final JwtUtil jwtUtil;
     private final AuthenticationManager authenticationManager;
     private final PasswordEncoder passwordEncoder;
     private final UserTotpSecretRepository userTotpSecretRepository;
+    private final JwtService jwtService;
 
     @Override
     public ResponseEntity<Page<ClientDto>> getClients(
@@ -116,9 +116,8 @@ public class ClientServiceImpl implements ClientService {
             throw new NotActivated();
         }
 
-        String accessToken = jwtUtil.generateToken(client);
-        String refreshToken =
-            jwtUtil.generateRefreshToken(token.getPrincipal(), principal, UserType.CLIENT);
+        String accessToken = jwtService.generateAccessToken(client);
+        String refreshToken = jwtService.generateRefreshToken(token.getPrincipal());
 
         return new LoginResponseDto(accessToken, refreshToken);
     }
@@ -126,18 +125,18 @@ public class ClientServiceImpl implements ClientService {
     @Override
     public ClientDto getMe(String authorization) {
         String token = authorization.replace("Bearer ", "");
-        String clientEmail = jwtUtil.extractUsername(token);
+        UUID clientId = jwtService.extractUserId(token);
 
-        if (jwtUtil.isTokenExpired(token)) throw new NotAuthenticated();
+        if (jwtService.isTokenExpired(token)) throw new NotAuthenticated();
 
         Optional<UserTotpSecret> userTotpSecret =
-            userTotpSecretRepository.findByClient_Email(clientEmail);
+            userTotpSecretRepository.findByClient_Id(clientId);
         boolean has2FA =
             userTotpSecret.map(UserTotpSecret::getIsActive)
                 .orElse(false);
 
         Client client =
-            clientRepository.findByEmail(clientEmail)
+            clientRepository.findById(clientId)
                 .orElseThrow(NotFound::new);
 
         return ClientMapper.INSTANCE.toDto(client, has2FA);
@@ -159,6 +158,11 @@ public class ClientServiceImpl implements ClientService {
     @Override
     public Optional<Client> getClientByEmail(String email) {
         return clientRepository.findByEmail(email);
+    }
+
+    @Override
+    public Optional<Client> findClientById(UUID id) {
+        return clientRepository.findById(id);
     }
 
     @Override

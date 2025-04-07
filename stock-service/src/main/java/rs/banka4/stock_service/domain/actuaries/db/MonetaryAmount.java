@@ -14,9 +14,12 @@ import rs.banka4.stock_service.domain.security.forex.db.CurrencyCode;
 @NoArgsConstructor
 @AllArgsConstructor
 public class MonetaryAmount {
-
+    @Column(nullable = false)
     private BigDecimal amount;
     @Enumerated(EnumType.STRING)
-    @Column(columnDefinition = "currency")
+    @Column(
+        columnDefinition = "currency",
+        nullable = false
+    )
     private CurrencyCode currency;
 }

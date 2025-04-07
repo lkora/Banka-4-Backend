@@ -7,6 +7,7 @@ import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -20,6 +21,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
+import rs.banka4.rafeisen.common.exceptions.jwt.Unauthorized;
 import rs.banka4.user_service.domain.account.db.Account;
 import rs.banka4.user_service.domain.account.dtos.AccountDto;
 import rs.banka4.user_service.domain.loan.db.*;
@@ -37,7 +39,6 @@ import rs.banka4.user_service.domain.user.client.db.Client;
 import rs.banka4.user_service.exceptions.NullPageRequest;
 import rs.banka4.user_service.exceptions.account.AccountNotActive;
 import rs.banka4.user_service.exceptions.account.NotAccountOwner;
-import rs.banka4.user_service.exceptions.jwt.Unauthorized;
 import rs.banka4.user_service.exceptions.loan.InterestRateAmountNotSupported;
 import rs.banka4.user_service.exceptions.loan.LoanAlreadyJudged;
 import rs.banka4.user_service.exceptions.loan.LoanNotFound;
@@ -47,8 +48,8 @@ import rs.banka4.user_service.exceptions.user.client.ClientNotFound;
 import rs.banka4.user_service.repositories.*;
 import rs.banka4.user_service.service.abstraction.AccountService;
 import rs.banka4.user_service.service.abstraction.ClientService;
+import rs.banka4.user_service.service.abstraction.JwtService;
 import rs.banka4.user_service.service.abstraction.LoanService;
-import rs.banka4.user_service.utils.JwtUtil;
 import rs.banka4.user_service.utils.loans.LoanRateScheduler;
 import rs.banka4.user_service.utils.specification.SpecificationCombinator;
 
@@ -63,7 +64,7 @@ public class LoanServiceImpl implements LoanService {
     private final LoanRepository loanRepository;
     private final LoanRequestRepository loanRequestRepository;
     private final InterestRateRepository interestRateRepository;
-    private final JwtUtil jwtUtil;
+    private final JwtService jwtService;
     private final LoanInstallmentRepository loanInstallmentRepository;
     private final BankAccountServiceImpl bankAccountService;
     private final TransactionServiceImpl transactionService;
@@ -86,10 +87,10 @@ public class LoanServiceImpl implements LoanService {
     @Transactional
     @Override
     public void createLoanApplication(LoanApplicationDto loanApplicationDto, String auth) {
-        String email = jwtUtil.extractUsername(auth);
-        Optional<Client> client = clientService.getClientByEmail(email);
+        UUID id = jwtService.extractUserId(auth);
+        Optional<Client> client = clientService.findClientById(id);
 
-        if (client.isEmpty()) throw new ClientNotFound(email);
+        if (client.isEmpty()) throw new ClientNotFound(id.toString());
 
         if (!userService.isPhoneNumberValid(loanApplicationDto.contactPhone())) {
 
@@ -109,7 +110,12 @@ public class LoanServiceImpl implements LoanService {
                 )
         );
 
-        connectAccountToLoan(loanApplicationDto, newLoan, email);
+        connectAccountToLoan(
+            loanApplicationDto,
+            newLoan,
+            client.get()
+                .getEmail()
+        );
         setLoanInterestRate(newLoan, loanApplicationDto);
         generateLoanNumber(newLoan);
         makeLoanRequest(newLoan, loanApplicationDto);
@@ -200,12 +206,12 @@ public class LoanServiceImpl implements LoanService {
             throw new NullPageRequest();
         }
 
-        String username = jwtUtil.extractUsername(token);
-        Optional<Client> client = clientService.getClientByEmail(username);
-        if (client.isEmpty()) throw new ClientNotFound(username);
+        UUID clientId = jwtService.extractUserId(token);
+        Optional<Client> client = clientService.findClientById(clientId);
+        if (client.isEmpty()) throw new ClientNotFound(clientId.toString());
 
         Set<AccountDto> accounts = accountService.getAccountsForClient(token);
-        if (accounts.isEmpty()) throw new NoLoansOnAccount(username);
+        if (accounts.isEmpty()) throw new NoLoansOnAccount(clientId.toString());
 
         Set<String> accountNumbers =
             accounts.stream()
@@ -327,8 +333,8 @@ public class LoanServiceImpl implements LoanService {
     }
 
     private void ensureEmployeeRole(String auth) {
-        var role = jwtUtil.extractRole(auth);
-        if (!role.equals("employee")) throw new Unauthorized(auth);
+        var role = jwtService.extractRole(auth);
+        if (!role.equalsIgnoreCase("employee")) throw new Unauthorized(auth);
     }
 
     @Transactional

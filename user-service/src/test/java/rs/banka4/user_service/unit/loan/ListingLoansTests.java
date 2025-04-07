@@ -32,14 +32,14 @@ import rs.banka4.user_service.generator.LoanObjectMother;
 import rs.banka4.user_service.repositories.LoanRepository;
 import rs.banka4.user_service.service.abstraction.AccountService;
 import rs.banka4.user_service.service.abstraction.ClientService;
+import rs.banka4.user_service.service.abstraction.JwtService;
 import rs.banka4.user_service.service.impl.LoanServiceImpl;
-import rs.banka4.user_service.utils.JwtUtil;
 
 @ExtendWith(MockitoExtension.class)
 public class ListingLoansTests {
 
     @Mock
-    private JwtUtil jwtUtil;
+    private JwtService jwtService;
 
     @Mock
     private ClientService clientService;
@@ -66,7 +66,7 @@ public class ListingLoansTests {
     void setUp() {
         loanApplicationDto = LoanObjectMother.generateLoanApplicationDto();
         client = new Client();
-        UUID clientId = UUID.randomUUID();
+        UUID clientId = UUID.fromString("4ba6cdd2-33c1-4573-ad1e-1a783d3b3924");
         client.setId(clientId);
         client.setEmail("test@example.com");
         client.setFirstName("OldFirstName");
@@ -93,8 +93,11 @@ public class ListingLoansTests {
     @Test
     void getMyLoans_Success() {
         PageRequest pageRequest = PageRequest.of(0, 10, Sort.by(Sort.Direction.DESC, "amount"));
-        when(jwtUtil.extractUsername(anyString())).thenReturn("test@example.com");
-        when(clientService.getClientByEmail("test@example.com")).thenReturn(Optional.of(client));
+        when(jwtService.extractUserId(anyString())).thenReturn(
+            UUID.fromString("4ba6cdd2-33c1-4573-ad1e-1a783d3b3924")
+        );
+        when(clientService.findClientById(UUID.fromString("4ba6cdd2-33c1-4573-ad1e-1a783d3b3924")))
+            .thenReturn(Optional.of(client));
         when(accountService.getAccountsForClient(anyString())).thenReturn(Set.of(accountDto));
 
         Loan loan = new Loan();
@@ -122,8 +125,11 @@ public class ListingLoansTests {
 
     @Test
     void getMyLoans_ClientNotFound() {
-        when(jwtUtil.extractUsername(anyString())).thenReturn("test@example.com");
-        when(clientService.getClientByEmail("test@example.com")).thenReturn(Optional.empty());
+        when(jwtService.extractUserId(anyString())).thenReturn(
+            UUID.fromString("4ba6cdd2-33c1-4573-ad1e-1a783d3b3924")
+        );
+        when(clientService.findClientById(UUID.fromString("4ba6cdd2-33c1-4573-ad1e-1a783d3b3924")))
+            .thenReturn(Optional.empty());
 
         assertThrows(
             ClientNotFound.class,
@@ -138,8 +144,11 @@ public class ListingLoansTests {
 
     @Test
     void getMyLoans_NoLoansOnAccount() {
-        when(jwtUtil.extractUsername(anyString())).thenReturn("test@example.com");
-        when(clientService.getClientByEmail("test@example.com")).thenReturn(Optional.of(client));
+        when(jwtService.extractUserId(anyString())).thenReturn(
+            UUID.fromString("4ba6cdd2-33c1-4573-ad1e-1a783d3b3924")
+        );
+        when(clientService.findClientById(UUID.fromString("4ba6cdd2-33c1-4573-ad1e-1a783d3b3924")))
+            .thenReturn(Optional.of(client));
         when(accountService.getAccountsForClient(anyString())).thenReturn(Set.of());
 
         assertThrows(

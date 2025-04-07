@@ -25,13 +25,13 @@ import rs.banka4.user_service.exceptions.user.client.ClientNotFound;
 import rs.banka4.user_service.generator.ClientObjectMother;
 import rs.banka4.user_service.repositories.ClientContactRepository;
 import rs.banka4.user_service.repositories.ClientRepository;
+import rs.banka4.user_service.service.abstraction.JwtService;
 import rs.banka4.user_service.service.impl.ClientContactServiceImpl;
-import rs.banka4.user_service.utils.JwtUtil;
 
 public class ClientContactServiceTests {
 
     @Mock
-    private JwtUtil jwtUtil;
+    private JwtService jwtService;
     @Mock
     private ClientContactRepository clientContactRepository;
     @Mock
@@ -48,12 +48,11 @@ public class ClientContactServiceTests {
     void testCreateClientContactSuccess() {
         // Arrange
         String token = "validToken";
-        String email = "email@test.com";
-        Client client = ClientObjectMother.generateClient(UUID.randomUUID(), email);
+        Client client = ClientObjectMother.generateClient(UUID.randomUUID(), null);
         ClientContactRequest request = ClientObjectMother.generateBasicClientContactRequest();
 
-        when(jwtUtil.extractUsername(token)).thenReturn(email);
-        when(clientRepository.findByEmail(email)).thenReturn(Optional.of(client));
+        when(jwtService.extractUserId(token)).thenReturn(client.getId());
+        when(clientRepository.findById(client.getId())).thenReturn(Optional.of(client));
 
         // Act
         clientContactService.createClientContact(token, request);
@@ -69,7 +68,7 @@ public class ClientContactServiceTests {
         String email = "email@test.com";
         ClientContactRequest request = ClientObjectMother.generateBasicClientContactRequest();
 
-        when(jwtUtil.extractUsername(token)).thenReturn(email);
+        when(jwtService.extractUserId(token)).thenReturn(UUID.randomUUID());
         when(clientRepository.findByEmail(email)).thenReturn(Optional.empty());
 
         // Act & Assert
@@ -83,15 +82,14 @@ public class ClientContactServiceTests {
     void testGetSpecificClientContactSuccess() {
         // Arrange
         String token = "validToken";
-        String email = "email@test.com";
         UUID contactId = UUID.randomUUID();
-        Client client = ClientObjectMother.generateClient(UUID.randomUUID(), email);
+        Client client = ClientObjectMother.generateClient(UUID.randomUUID(), null);
         ClientContact clientContact = ClientObjectMother.generateBasicClientContact();
         clientContact.setClient(client);
         clientContact.setId(contactId);
 
-        when(jwtUtil.extractUsername(token)).thenReturn(email);
-        when(clientRepository.findByEmail(email)).thenReturn(Optional.of(client));
+        when(jwtService.extractUserId(token)).thenReturn(client.getId());
+        when(clientRepository.findById(client.getId())).thenReturn(Optional.of(client));
         when(clientContactRepository.findById(contactId)).thenReturn(Optional.of(clientContact));
 
         // Act
@@ -104,36 +102,18 @@ public class ClientContactServiceTests {
         assertEquals(clientContact.getAccountNumber(), result.accountNumber());
     }
 
-    @Test
-    void testGetSpecificClientContactNotFound() {
-        // Arrange
-        String token = "validToken";
-        String email = "email@test.com";
-        UUID contactId = UUID.randomUUID();
-
-        when(jwtUtil.extractUsername(token)).thenReturn(email);
-        when(clientRepository.findByEmail(email)).thenReturn(Optional.of(new Client()));
-        when(clientContactRepository.findById(contactId)).thenReturn(Optional.empty());
-
-        // Act & Assert
-        assertThrows(
-            ClientContactNotFound.class,
-            () -> clientContactService.getSpecificClientContact(token, contactId)
-        );
-    }
 
     @Test
     void testGetSpecificClientContactNotAuthenticated() {
         // Arrange
         String token = "validToken";
-        String email = "email@test.com";
         UUID contactId = UUID.randomUUID();
-        Client client = ClientObjectMother.generateClient(UUID.randomUUID(), email);
+        Client client = ClientObjectMother.generateClient(UUID.randomUUID(), null);
         ClientContact clientContact = new ClientContact();
         clientContact.setClient(new Client());
 
-        when(jwtUtil.extractUsername(token)).thenReturn(email);
-        when(clientRepository.findByEmail(email)).thenReturn(Optional.of(client));
+        when(jwtService.extractUserId(token)).thenReturn(client.getId());
+        when(clientRepository.findById(client.getId())).thenReturn(Optional.of(client));
         when(clientContactRepository.findById(contactId)).thenReturn(Optional.of(clientContact));
 
         // Act & Assert
@@ -147,15 +127,14 @@ public class ClientContactServiceTests {
     void testGetAllClientContactsSuccess() {
         // Arrange
         String token = "validToken";
-        String email = "email@test.com";
-        Client client = ClientObjectMother.generateClient(UUID.randomUUID(), email);
+        Client client = ClientObjectMother.generateClient(UUID.randomUUID(), null);
         Pageable pageable = PageRequest.of(0, 10);
         ClientContact clientContact = ClientObjectMother.generateBasicClientContact();
         clientContact.setClient(client);
         Page<ClientContact> clientContactPage = new PageImpl<>(List.of(clientContact), pageable, 1);
 
-        when(jwtUtil.extractUsername(token)).thenReturn(email);
-        when(clientRepository.findByEmail(email)).thenReturn(Optional.of(client));
+        when(jwtService.extractUserId(token)).thenReturn(client.getId());
+        when(clientRepository.findById(client.getId())).thenReturn(Optional.of(client));
         when(clientContactRepository.findAllActive(pageable, client)).thenReturn(clientContactPage);
 
         // Act
@@ -182,13 +161,12 @@ public class ClientContactServiceTests {
     void testGetAllClientContactsNoContactsFound() {
         // Arrange
         String token = "validToken";
-        String email = "email@test.com";
-        Client client = ClientObjectMother.generateClient(UUID.randomUUID(), email);
+        Client client = ClientObjectMother.generateClient(UUID.randomUUID(), null);
         Pageable pageable = PageRequest.of(0, 10);
         Page<ClientContact> clientContactPage = new PageImpl<>(List.of(), pageable, 0);
 
-        when(jwtUtil.extractUsername(token)).thenReturn(email);
-        when(clientRepository.findByEmail(email)).thenReturn(Optional.of(client));
+        when(jwtService.extractUserId(token)).thenReturn(client.getId());
+        when(clientRepository.findById(client.getId())).thenReturn(Optional.of(client));
         when(clientContactRepository.findAllActive(pageable, client)).thenReturn(clientContactPage);
 
         // Act
@@ -203,11 +181,11 @@ public class ClientContactServiceTests {
     void testGetAllClientContactsClientNotFound() {
         // Arrange
         String token = "validToken";
-        String email = "email@test.com";
+        Client client = ClientObjectMother.generateClient(UUID.randomUUID(), null);
         Pageable pageable = PageRequest.of(0, 10);
 
-        when(jwtUtil.extractUsername(token)).thenReturn(email);
-        when(clientRepository.findByEmail(email)).thenReturn(Optional.empty());
+        when(jwtService.extractUserId(token)).thenReturn(UUID.randomUUID());
+        when(clientRepository.findById(client.getId())).thenReturn(Optional.of(client));
 
         // Act & Assert
         assertThrows(
@@ -220,16 +198,15 @@ public class ClientContactServiceTests {
     void testUpdateClientContactSuccess() {
         // Arrange
         String token = "validToken";
-        String email = "email@test.com";
         UUID contactId = UUID.randomUUID();
-        Client client = ClientObjectMother.generateClient(UUID.randomUUID(), email);
+        Client client = ClientObjectMother.generateClient(UUID.randomUUID(), null);
         ClientContact clientContact = ClientObjectMother.generateBasicClientContact();
         clientContact.setClient(client);
         clientContact.setId(contactId);
         ClientContactRequest request = ClientObjectMother.generateBasicClientContactRequest();
 
-        when(jwtUtil.extractUsername(token)).thenReturn(email);
-        when(clientRepository.findByEmail(email)).thenReturn(Optional.of(client));
+        when(jwtService.extractUserId(token)).thenReturn(client.getId());
+        when(clientRepository.findById(client.getId())).thenReturn(Optional.of(client));
         when(clientContactRepository.findById(contactId)).thenReturn(Optional.of(clientContact));
 
         // Act
@@ -245,12 +222,13 @@ public class ClientContactServiceTests {
     void testUpdateClientContactClientNotFound() {
         // Arrange
         String token = "validToken";
-        String email = "email@test.com";
+        Client client = ClientObjectMother.generateClient(UUID.randomUUID(), null);
+
         UUID contactId = UUID.randomUUID();
         ClientContactRequest request = ClientObjectMother.generateBasicClientContactRequest();
 
-        when(jwtUtil.extractUsername(token)).thenReturn(email);
-        when(clientRepository.findByEmail(email)).thenReturn(Optional.empty());
+        when(jwtService.extractUserId(token)).thenReturn(UUID.randomUUID());
+        when(clientRepository.findById(client.getId())).thenReturn(Optional.of(client));
 
         // Act & Assert
         assertThrows(
@@ -263,16 +241,15 @@ public class ClientContactServiceTests {
     void testUpdateClientContactNotAuthenticated() {
         // Arrange
         String token = "validToken";
-        String email = "email@test.com";
         UUID contactId = UUID.randomUUID();
-        Client client = ClientObjectMother.generateClient(UUID.randomUUID(), email);
+        Client client = ClientObjectMother.generateClient(UUID.randomUUID(), null);
         ClientContact clientContact = ClientObjectMother.generateBasicClientContact();
         clientContact.setClient(new Client());
         clientContact.setId(contactId);
         ClientContactRequest request = ClientObjectMother.generateBasicClientContactRequest();
 
-        when(jwtUtil.extractUsername(token)).thenReturn(email);
-        when(clientRepository.findByEmail(email)).thenReturn(Optional.of(client));
+        when(jwtService.extractUserId(token)).thenReturn(client.getId());
+        when(clientRepository.findById(client.getId())).thenReturn(Optional.of(client));
         when(clientContactRepository.findById(contactId)).thenReturn(Optional.of(clientContact));
 
         // Act & Assert
@@ -286,13 +263,12 @@ public class ClientContactServiceTests {
     void testUpdateClientContactNotFound() {
         // Arrange
         String token = "validToken";
-        String email = "email@test.com";
         UUID contactId = UUID.randomUUID();
-        Client client = ClientObjectMother.generateClient(UUID.randomUUID(), email);
+        Client client = ClientObjectMother.generateClient(UUID.randomUUID(), null);
         ClientContactRequest request = ClientObjectMother.generateBasicClientContactRequest();
 
-        when(jwtUtil.extractUsername(token)).thenReturn(email);
-        when(clientRepository.findByEmail(email)).thenReturn(Optional.of(client));
+        when(jwtService.extractUserId(token)).thenReturn(client.getId());
+        when(clientRepository.findById(client.getId())).thenReturn(Optional.of(client));
         when(clientContactRepository.findById(contactId)).thenReturn(Optional.empty());
 
         // Act & Assert

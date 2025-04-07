@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.Mockito.*;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeEach;
@@ -26,8 +27,9 @@ import rs.banka4.user_service.domain.account.dtos.AccountDto;
 import rs.banka4.user_service.domain.account.mapper.AccountMapper;
 import rs.banka4.user_service.generator.AccountObjectMother;
 import rs.banka4.user_service.repositories.AccountRepository;
+import rs.banka4.user_service.repositories.ClientRepository;
+import rs.banka4.user_service.service.abstraction.JwtService;
 import rs.banka4.user_service.service.impl.AccountServiceImpl;
-import rs.banka4.user_service.utils.JwtUtil;
 
 public class AccountServiceFilterTests {
 
@@ -36,7 +38,9 @@ public class AccountServiceFilterTests {
     @Mock
     private AccountMapper accountMapper;
     @Mock
-    private JwtUtil jwtUtil;
+    private JwtService jwtService;
+    @Mock
+    private ClientRepository clientRepository;
     @InjectMocks
     private AccountServiceImpl accountService;
 
@@ -68,8 +72,17 @@ public class AccountServiceFilterTests {
 
         PageRequest pageRequest = PageRequest.of(0, 10);
 
-        when(jwtUtil.extractUsername(token)).thenReturn("john.doe@example.com");
-        when(jwtUtil.extractRole(token)).thenReturn(role);
+        when(jwtService.extractUserId(token)).thenReturn(
+            account1.getClient()
+                .getId()
+        );
+        when(
+            clientRepository.findById(
+                account1.getClient()
+                    .getId()
+            )
+        ).thenReturn(Optional.ofNullable(account1.getClient()));
+        when(jwtService.extractRole(token)).thenReturn(role);
 
         ArgumentCaptor<Specification<Account>> specCaptor =
             ArgumentCaptor.forClass(Specification.class);

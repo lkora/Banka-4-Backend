@@ -18,3 +18,24 @@ dependencyManagement {
 repositories {
 	mavenCentral()
 }
+
+dependencies {
+	compileOnly("org.projectlombok:lombok")
+	annotationProcessor("org.projectlombok:lombok")
+	api("org.springframework.security:spring-security-core")
+	api("org.springframework:spring-web")
+
+
+	val jjwtVer = "0.12.6"
+	api("io.jsonwebtoken:jjwt-api:${jjwtVer}")
+	api("io.jsonwebtoken:jjwt-impl:${jjwtVer}")
+	api("io.jsonwebtoken:jjwt-jackson:${jjwtVer}")
+
+	testImplementation("org.assertj:assertj-core")
+	testImplementation("org.junit.jupiter:junit-jupiter")
+	testRuntimeOnly("org.junit.platform:junit-platform-launcher")
+}
+
+tasks.withType<Test> {
+	useJUnitPlatform()
+}

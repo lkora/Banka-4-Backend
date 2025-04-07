@@ -65,7 +65,7 @@ public class CardObjectMother {
 
     public static Card generateCardWithAllAttributes() {
         return Card.builder()
-            .id(UUID.randomUUID())
+            .id(UUID.fromString("6ea50113-da6f-4693-b9d3-ac27f807d7f5"))
             .cardNumber("1234567812345678")
             .cvv("123")
             .cardName(CardName.VISA)

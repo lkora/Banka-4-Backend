@@ -30,15 +30,15 @@ import rs.banka4.user_service.exceptions.user.client.NonexistantSortByField;
 import rs.banka4.user_service.generator.ClientObjectMother;
 import rs.banka4.user_service.repositories.ClientRepository;
 import rs.banka4.user_service.repositories.UserTotpSecretRepository;
+import rs.banka4.user_service.service.abstraction.JwtService;
 import rs.banka4.user_service.service.impl.ClientServiceImpl;
-import rs.banka4.user_service.utils.JwtUtil;
 
 public class ClientServiceGetTests {
 
     @Mock
     private ClientRepository clientRepository;
     @Mock
-    private JwtUtil jwtUtil;
+    private JwtService jwtService;
     @Mock
     private ClientMapper clientMapper;
     @InjectMocks
@@ -181,10 +181,11 @@ public class ClientServiceGetTests {
         Client client = ClientObjectMother.generateClient(UUID.randomUUID(), email);
         ClientDto clientDto = ClientObjectMother.generateBasicClientDto(client.getId(), email);
 
-        when(jwtUtil.extractUsername(tokenStr)).thenReturn(email);
-        when(jwtUtil.isTokenExpired(tokenStr)).thenReturn(false);
+        when(jwtService.extractUserId(tokenStr)).thenReturn(client.getId());
+        when(jwtService.isTokenExpired(tokenStr)).thenReturn(false);
         when(clientRepository.findByEmail(email)).thenReturn(Optional.of(client));
         when(clientMapper.toDto(client)).thenReturn(clientDto);
+        when(clientRepository.findById(client.getId())).thenReturn(Optional.of(client));
 
         // Act
         ClientDto result = clientService.getMe(bearerToken);
@@ -201,8 +202,8 @@ public class ClientServiceGetTests {
         String bearerToken = "Bearer " + tokenStr;
         String email = "email@test.com";
 
-        when(jwtUtil.extractUsername(tokenStr)).thenReturn(email);
-        when(jwtUtil.isTokenExpired(tokenStr)).thenReturn(true);
+        when(jwtService.extractUserId(tokenStr)).thenReturn(UUID.randomUUID());
+        when(jwtService.isTokenExpired(tokenStr)).thenReturn(true);
 
         // Act & Assert
         assertThrows(NotAuthenticated.class, () -> clientService.getMe(bearerToken));
@@ -215,8 +216,8 @@ public class ClientServiceGetTests {
         String bearerToken = "Bearer " + tokenStr;
         String email = "email@test.com";
 
-        when(jwtUtil.extractUsername(tokenStr)).thenReturn(email);
-        when(jwtUtil.isTokenExpired(tokenStr)).thenReturn(false);
+        when(jwtService.extractUserId(tokenStr)).thenReturn(UUID.randomUUID());
+        when(jwtService.isTokenExpired(tokenStr)).thenReturn(false);
         when(clientRepository.findByEmail(email)).thenReturn(Optional.empty());
 
         // Act & Assert

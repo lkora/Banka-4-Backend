@@ -8,6 +8,7 @@ import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.stereotype.Repository;
 import rs.banka4.user_service.domain.account.db.Account;
 import rs.banka4.user_service.domain.card.db.Card;
+import rs.banka4.user_service.domain.user.client.db.Client;
 
 @Repository
 public interface CardRepository extends JpaRepository<Card, UUID>, JpaSpecificationExecutor<Card> {
@@ -22,5 +23,7 @@ public interface CardRepository extends JpaRepository<Card, UUID>, JpaSpecificat
     Optional<Card> findCardByCardNumber(String cardNumber);
 
     List<Card> findByAccountAccountNumber(String accountNumber);
+
+    List<Card> findByAccount_Client(Client client);
 
 }

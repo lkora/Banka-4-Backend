@@ -20,10 +20,10 @@ import rs.banka4.stock_service.domain.security.Security;
 @Table(name = "listing_daily_price_info")
 public class ListingDailyPriceInfo {
     @Id
-    @GeneratedValue(strategy = GenerationType.AUTO)
-    private UUID id;
+    @Builder.Default
+    private UUID id = UUID.randomUUID();
 
-    @ManyToOne
+    @ManyToOne(optional = false)
     private Security security;
 
     @ManyToOne(

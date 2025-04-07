@@ -12,20 +12,19 @@ import rs.banka4.stock_service.domain.security.Security;
 
 @Entity
 @AllArgsConstructor
-@Getter
-@Setter
-@RequiredArgsConstructor
 @Builder
+@Data
+@NoArgsConstructor
 @Table(name = "listings")
 public class Listing {
     @Id
     @Builder.Default
     private UUID id = UUID.randomUUID();
 
-    @ManyToOne
+    @ManyToOne(optional = false)
     private Security security;
 
-    @ManyToOne
+    @ManyToOne(optional = false)
     private Exchange exchange;
 
     @Column(nullable = false)

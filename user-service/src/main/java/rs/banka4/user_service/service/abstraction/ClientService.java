@@ -20,6 +20,8 @@ public interface ClientService {
 
     Optional<Client> getClientByEmail(String email);
 
+    Optional<Client> findClientById(UUID id);
+
     void createClient(CreateClientDto createClientDto);
 
     Client createClient(AccountClientIdDto request);

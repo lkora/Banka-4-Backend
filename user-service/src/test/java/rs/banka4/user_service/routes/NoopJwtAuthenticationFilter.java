@@ -13,7 +13,7 @@ import rs.banka4.user_service.config.filters.JwtAuthenticationFilter;
  */
 public class NoopJwtAuthenticationFilter extends JwtAuthenticationFilter {
     public NoopJwtAuthenticationFilter() {
-        super(null, null, null);
+        super(null);
     }
 
     @Override

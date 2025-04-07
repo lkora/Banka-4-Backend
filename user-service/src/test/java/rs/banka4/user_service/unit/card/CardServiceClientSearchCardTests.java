@@ -5,10 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
 
-import java.util.Collections;
-import java.util.List;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -30,8 +27,8 @@ import rs.banka4.user_service.generator.CardObjectMother;
 import rs.banka4.user_service.repositories.AccountRepository;
 import rs.banka4.user_service.repositories.CardRepository;
 import rs.banka4.user_service.repositories.ClientRepository;
+import rs.banka4.user_service.service.abstraction.JwtService;
 import rs.banka4.user_service.service.impl.CardServiceImpl;
-import rs.banka4.user_service.utils.JwtUtil;
 
 public class CardServiceClientSearchCardTests {
 
@@ -42,7 +39,7 @@ public class CardServiceClientSearchCardTests {
     private CardServiceImpl cardService;
 
     @Mock
-    private JwtUtil jwtUtil;
+    private JwtService jwtService;
 
     @Mock
     private ClientRepository clientRepository;
@@ -82,11 +79,13 @@ public class CardServiceClientSearchCardTests {
         mockAccount.setAccountNumber(accountNumber);
         Set<Account> mockAccounts = Set.of(mockAccount);
 
-        // Mock JWT token extraction
-        when(jwtUtil.extractUsername(token)).thenReturn(email);
+        when(jwtService.extractUserId(token)).thenReturn(
+            UUID.fromString("6ea50113-da6f-4693-b9d3-ac27f807d7f5")
+        );
 
         // Mock repository calls
-        when(clientRepository.findByEmail(email)).thenReturn(Optional.of(mockClient));
+        when(clientRepository.findById(UUID.fromString("6ea50113-da6f-4693-b9d3-ac27f807d7f5")))
+            .thenReturn(Optional.of(mockClient));
         when(accountRepository.findAllByClient(mockClient)).thenReturn(mockAccounts);
         when(cardRepository.findByAccountAccountNumber(eq(accountNumber))).thenReturn(cardList);
 

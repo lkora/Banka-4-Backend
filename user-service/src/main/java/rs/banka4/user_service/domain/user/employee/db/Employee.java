@@ -6,8 +6,8 @@ import java.util.Objects;
 import lombok.*;
 import lombok.experimental.SuperBuilder;
 import org.hibernate.proxy.HibernateProxy;
+import rs.banka4.rafeisen.common.security.UserType;
 import rs.banka4.user_service.domain.user.User;
-import rs.banka4.user_service.security.UserType;
 
 @Entity(name = "employees")
 @Getter

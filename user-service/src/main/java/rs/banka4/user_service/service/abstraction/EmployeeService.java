@@ -35,6 +35,8 @@ public interface EmployeeService {
 
     Optional<Employee> findEmployeeByEmail(String email);
 
+    Optional<Employee> findEmployeeById(UUID id);
+
     void updateEmployee(UUID id, UpdateEmployeeDto updateEmployeeDto);
 
     EmployeeResponseDto getEmployeeById(UUID id);

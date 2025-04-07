@@ -11,10 +11,9 @@ import rs.banka4.stock_service.domain.security.forex.db.CurrencyCode;
 
 @Entity
 @AllArgsConstructor
-@Getter
-@Setter
-@RequiredArgsConstructor
 @Builder
+@Data
+@NoArgsConstructor
 @Table(name = "exchanges")
 public class Exchange {
     // https://drive.google.com/file/d/1H8FPNSkKhvkHjkJtMSJxwsnMMt7VIQjG/view za seed
@@ -51,6 +50,7 @@ public class Exchange {
     private OffsetDateTime closeTime;
 
     @Builder.Default
+    @Column(nullable = false)
     private LocalDate createdAt = LocalDate.now();
 
     @Override

@@ -9,8 +9,7 @@ import org.testcontainers.junit.jupiter.Container;
 @TestConfiguration
 public class PSQLTestContainerConfig {
     @Container
-    private static final PostgreSQLContainer<?> postgres
-        = new PostgreSQLContainer<>("postgres:17");
+    private static final PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>("postgres:17");
 
     @Bean
     @ServiceConnection

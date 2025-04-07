@@ -1,0 +1,32 @@
+{
+  "content": [
+    {
+      "cardNumber": "1234567810345678",
+      "cvv": "123",
+      "cardName": "VISA",
+      "cardType": "DEBIT",
+      "limit": 10000,
+      "cardStatus": "ACTIVATED",
+      "accountNumber": "123456789",
+      "client": {
+        "id": "6f72db23-afc8-4d71-b392-eb9e626ed9af",
+        "firstName": "John",
+        "lastName": "Doe",
+        "dateOfBirth": "1990-01-01",
+        "gender": "MALE",
+        "email": "john.doe@example.com",
+        "phone": "+381664013258",
+        "address": "123 Main St",
+        "privileges": ["ADMIN"],
+        "has2FA": null
+      },
+      "authorizedUserDto": null
+    }
+  ],
+  "page": {
+    "size": 10,
+    "number": 0,
+    "totalElements": 1,
+    "totalPages": 1
+  }
+}

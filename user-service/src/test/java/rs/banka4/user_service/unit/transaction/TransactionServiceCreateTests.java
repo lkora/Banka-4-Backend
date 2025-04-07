@@ -32,10 +32,10 @@ import rs.banka4.user_service.repositories.AccountRepository;
 import rs.banka4.user_service.repositories.ClientContactRepository;
 import rs.banka4.user_service.repositories.ClientRepository;
 import rs.banka4.user_service.repositories.TransactionRepository;
+import rs.banka4.user_service.service.abstraction.JwtService;
 import rs.banka4.user_service.service.impl.ExchangeRateService;
 import rs.banka4.user_service.service.impl.TotpServiceImpl;
 import rs.banka4.user_service.service.impl.TransactionServiceImpl;
-import rs.banka4.user_service.utils.JwtUtil;
 
 public class TransactionServiceCreateTests {
 
@@ -46,7 +46,7 @@ public class TransactionServiceCreateTests {
     @Mock
     private TransactionRepository transactionRepository;
     @Mock
-    private JwtUtil jwtUtil;
+    private JwtService jwtService;
     @Mock
     private Authentication authentication;
     @Mock
@@ -87,8 +87,10 @@ public class TransactionServiceCreateTests {
 
         client.setAccounts(Set.of(fromAccount));
 
-        when(jwtUtil.extractUsername(anyString())).thenReturn("markezaa@example.com");
-        when(clientRepository.findByEmail(anyString())).thenReturn(Optional.of(client));
+        when(jwtService.extractUserId(anyString())).thenReturn(
+            UUID.fromString("9df5e618-f21d-48a7-a7a4-ac55ea8bec97")
+        );
+        when(clientRepository.findById(client.getId())).thenReturn(Optional.of(client));
         when(accountRepository.findAccountByAccountNumber(createPaymentDto.fromAccount()))
             .thenReturn(Optional.of(fromAccount));
         when(accountRepository.findAccountByAccountNumber(createPaymentDto.toAccount())).thenReturn(
@@ -135,8 +137,10 @@ public class TransactionServiceCreateTests {
         fromAccount.setBalance(BigDecimal.valueOf(0.50)); // Insufficient funds
         client.setAccounts(Set.of(fromAccount));
 
-        when(jwtUtil.extractUsername(anyString())).thenReturn("markezaa@example.com");
-        when(clientRepository.findByEmail(anyString())).thenReturn(Optional.of(client));
+        when(jwtService.extractUserId(anyString())).thenReturn(
+            UUID.fromString("9df5e618-f21d-48a7-a7a4-ac55ea8bec97")
+        );
+        when(clientRepository.findById(client.getId())).thenReturn(Optional.of(client));
         when(accountRepository.findAccountByAccountNumber(createPaymentDto.fromAccount()))
             .thenReturn(Optional.of(fromAccount));
         when(accountRepository.findAccountByAccountNumber(createPaymentDto.toAccount())).thenReturn(
@@ -166,8 +170,10 @@ public class TransactionServiceCreateTests {
 
         client.setAccounts(Set.of());
 
-        when(jwtUtil.extractUsername(anyString())).thenReturn("markezaa@example.com");
-        when(clientRepository.findByEmail(anyString())).thenReturn(Optional.of(client));
+        when(jwtService.extractUserId(anyString())).thenReturn(
+            UUID.fromString("9df5e618-f21d-48a7-a7a4-ac55ea8bec97")
+        );
+        when(clientRepository.findById(client.getId())).thenReturn(Optional.of(client));
         when(accountRepository.findAccountByAccountNumber(createPaymentDto.fromAccount()))
             .thenReturn(Optional.of(fromAccount));
         when(accountRepository.findAccountByAccountNumber(createPaymentDto.toAccount())).thenReturn(
@@ -194,8 +200,10 @@ public class TransactionServiceCreateTests {
 
         client.setAccounts(Set.of(fromAccount));
 
-        when(jwtUtil.extractUsername(anyString())).thenReturn("markezaa@example.com");
-        when(clientRepository.findByEmail(anyString())).thenReturn(Optional.of(client));
+        when(jwtService.extractUserId(anyString())).thenReturn(
+            UUID.fromString("9df5e618-f21d-48a7-a7a4-ac55ea8bec97")
+        );
+        when(clientRepository.findById(client.getId())).thenReturn(Optional.of(client));
         when(accountRepository.findAccountByAccountNumber(createPaymentDto.fromAccount()))
             .thenReturn(Optional.of(fromAccount));
         when(accountRepository.findAccountByAccountNumber(createPaymentDto.toAccount())).thenReturn(
@@ -219,8 +227,10 @@ public class TransactionServiceCreateTests {
                 "markezaa@example.com"
             );
 
-        when(jwtUtil.extractUsername(anyString())).thenReturn("markezaa@example.com");
-        when(clientRepository.findByEmail(anyString())).thenReturn(Optional.of(client));
+        when(jwtService.extractUserId(anyString())).thenReturn(
+            UUID.fromString("9df5e618-f21d-48a7-a7a4-ac55ea8bec97")
+        );
+        when(clientRepository.findById(client.getId())).thenReturn(Optional.of(client));
         when(accountRepository.findAccountByAccountNumber(createPaymentDto.fromAccount()))
             .thenReturn(Optional.empty());
         when(accountRepository.findAccountByAccountNumber(createPaymentDto.toAccount())).thenReturn(
@@ -253,8 +263,10 @@ public class TransactionServiceCreateTests {
 
         client.setAccounts(Set.of(fromAccount, toAccount));
 
-        when(jwtUtil.extractUsername(anyString())).thenReturn("markezaa@example.com");
-        when(clientRepository.findByEmail(anyString())).thenReturn(Optional.of(client));
+        when(jwtService.extractUserId(anyString())).thenReturn(
+            UUID.fromString("9df5e618-f21d-48a7-a7a4-ac55ea8bec97")
+        );
+        when(clientRepository.findById(client.getId())).thenReturn(Optional.of(client));
         when(accountRepository.findAccountByAccountNumber(createTransferDto.fromAccount()))
             .thenReturn(Optional.of(fromAccount));
         when(accountRepository.findAccountByAccountNumber(createTransferDto.toAccount()))
@@ -291,8 +303,10 @@ public class TransactionServiceCreateTests {
         toAccount.setClient(client);
         client.setAccounts(Set.of(fromAccount, toAccount));
 
-        when(jwtUtil.extractUsername(anyString())).thenReturn("markezaa@example.com");
-        when(clientRepository.findByEmail(anyString())).thenReturn(Optional.of(client));
+        when(jwtService.extractUserId(anyString())).thenReturn(
+            UUID.fromString("9df5e618-f21d-48a7-a7a4-ac55ea8bec97")
+        );
+        when(clientRepository.findById(client.getId())).thenReturn(Optional.of(client));
         when(accountRepository.findAccountByAccountNumber(createPaymentDto.fromAccount()))
             .thenReturn(Optional.of(fromAccount));
         when(accountRepository.findAccountByAccountNumber(createPaymentDto.toAccount())).thenReturn(
@@ -321,8 +335,10 @@ public class TransactionServiceCreateTests {
 
         client.setAccounts(Set.of(fromAccount));
 
-        when(jwtUtil.extractUsername(anyString())).thenReturn("markezaa@example.com");
-        when(clientRepository.findByEmail(anyString())).thenReturn(Optional.of(client));
+        when(jwtService.extractUserId(anyString())).thenReturn(
+            UUID.fromString("9df5e618-f21d-48a7-a7a4-ac55ea8bec97")
+        );
+        when(clientRepository.findById(client.getId())).thenReturn(Optional.of(client));
         when(accountRepository.findAccountByAccountNumber(createTransferDto.fromAccount()))
             .thenReturn(Optional.of(fromAccount));
         when(accountRepository.findAccountByAccountNumber(createTransferDto.toAccount()))

@@ -33,9 +33,9 @@ import rs.banka4.user_service.generator.TransactionObjectMother;
 import rs.banka4.user_service.repositories.AccountRepository;
 import rs.banka4.user_service.repositories.ClientRepository;
 import rs.banka4.user_service.repositories.TransactionRepository;
+import rs.banka4.user_service.service.abstraction.JwtService;
 import rs.banka4.user_service.service.impl.BankAccountServiceImpl;
 import rs.banka4.user_service.service.impl.TransactionServiceImpl;
-import rs.banka4.user_service.utils.JwtUtil;
 
 public class TransactionServiceGetTests {
 
@@ -48,7 +48,7 @@ public class TransactionServiceGetTests {
     @Mock
     private TransactionMapper transactionMapper;
     @Mock
-    private JwtUtil jwtUtil;
+    private JwtService jwtService;
     @Mock
     private BankAccountServiceImpl bankAccountServiceImpl;
     @InjectMocks
@@ -119,7 +119,7 @@ public class TransactionServiceGetTests {
         when(accountRepository.findAccountByAccountNumber(accountNumber)).thenReturn(
             Optional.of(fromAccount)
         );
-        when(clientRepository.findByEmail(any())).thenReturn(
+        when(clientRepository.findById(any())).thenReturn(
             Optional.ofNullable(fromAccount.getClient())
         );
         when(bankAccountServiceImpl.getBankOwner()).thenReturn(fromAccount.getClient());
@@ -329,7 +329,7 @@ public class TransactionServiceGetTests {
                 TransactionStatus.REALIZED
             )
         );
-        when(clientRepository.findByEmail(any())).thenReturn(
+        when(clientRepository.findById(any())).thenReturn(
             Optional.ofNullable(fromAccount.getClient())
         );
         when(bankAccountServiceImpl.getBankOwner()).thenReturn(fromAccount.getClient());
