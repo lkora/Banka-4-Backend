@@ -19,12 +19,8 @@ import rs.banka4.stock_service.domain.security.forex.db.CurrencyCode;
 import rs.banka4.stock_service.domain.security.forex.db.ForexPair;
 import rs.banka4.stock_service.domain.security.future.db.Future;
 import rs.banka4.stock_service.domain.security.stock.db.Stock;
-import rs.banka4.stock_service.exceptions.CurrencyConversionException;
 import rs.banka4.stock_service.repositories.OrderRepository;
 import rs.banka4.stock_service.service.abstraction.SecuritiesService;
-import rs.banka4.user_service.domain.currency.db.Currency;
-import rs.banka4.user_service.service.impl.ExchangeRateService;
-import rs.banka4.user_service.utils.JwtUtil;
 
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
@@ -38,10 +34,10 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class SecuritiesServiceImpl implements SecuritiesService {
 
-    private JwtUtil jwtUtils;
     private final OrderRepository orderRepository;
     private final SecurityPriceService securityPriceService;
-    private final ExchangeRateService exchangeRateService;
+//    private final JwtService jwtService;
+//    private final ExchangeRateService exchangeRateService;
 
     @Override
     public ResponseEntity<Page<SecurityDto>> getSecurities(
@@ -53,8 +49,8 @@ public class SecuritiesServiceImpl implements SecuritiesService {
     }
 
     public List<SecurityResponse> getMySecurities(Authentication authentication) {
-        UUID userId = jwtUtils.extractUserId(authentication.getCredentials().toString());
-        List<Order> orders = orderRepository.findByUserIdAndStatusAndIsDone(userId, Status.APPROVED, true);
+        UUID userId = UUID.randomUUID(); //jwtService.extractUserId(authentication.getCredentials().toString());
+        List<Order> orders = orderRepository.findByUserIdAndStatusAndDone(userId, Status.APPROVED, true);
         Map<Asset, Integer> assetQuantities = calculateNetQuantities(orders);
         return assetQuantities.entrySet().stream()
             .filter(entry -> entry.getValue() > 0)
@@ -63,13 +59,10 @@ public class SecuritiesServiceImpl implements SecuritiesService {
     }
 
     public TotalProfitResponse calculateTotalStockProfit(Authentication authentication) {
-        UUID userId = jwtUtils.extractUserId(authentication.getCredentials().toString());
-
         CurrencyCode accountCurrency = getAccountCurrency(authentication);
         List<SecurityResponse> holdings = getMySecurities(authentication);
 
         BigDecimal total = holdings.stream()
-            .filter(h -> "Stock".equals(h.type()))
             .map(h -> convertProfit(h, accountCurrency))
             .reduce(BigDecimal.ZERO, BigDecimal::add);
 
@@ -143,15 +136,18 @@ public class SecuritiesServiceImpl implements SecuritiesService {
     }
 
     private BigDecimal convertProfit(SecurityResponse holding, CurrencyCode targetCurrency) {
-        try {
-            return exchangeRateService.convertCurrency(
-                holding.profit(),
-                Currency.Code.USD, // Maybe add this: holding.currency(),, but conversion from CurrencyCode to CurrencyCode is necessary, or modify the exchangeRateService to accept CurrencyCode,
-                Currency.Code.USD  // targetCurrency
-            );
-        } catch (NullPointerException e) {
-            throw new CurrencyConversionException();
-        }
+        return holding.profit();
+
+        // Add this back when adding unit conversion and differentiation
+//        try {
+//            return exchangeRateService.convertCurrency(
+//                holding.profit(),
+//                Currency.Code.USD, // Maybe add this: holding.currency(),, but conversion from CurrencyCode to CurrencyCode is necessary, or modify the exchangeRateService to accept CurrencyCode,
+//                Currency.Code.USD  // targetCurrency
+//            );
+//        } catch (NullPointerException e) {
+//            throw new CurrencyConversionException();
+//        }
     }
 
     private CurrencyCode getAccountCurrency(Authentication auth) {

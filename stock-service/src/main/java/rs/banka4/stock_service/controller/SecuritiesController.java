@@ -49,7 +49,7 @@ public class SecuritiesController implements SecuritiesApiDocumentation {
     @Override
     @GetMapping("/profit")
     public ResponseEntity<TotalProfitResponse> getTotalProfit(Authentication auth) {
-        return ResponseEntity.ok(securityService.calculateTotalProfit(auth));
+        return ResponseEntity.ok(securityService.calculateTotalStockProfit(auth));
     }
 
 

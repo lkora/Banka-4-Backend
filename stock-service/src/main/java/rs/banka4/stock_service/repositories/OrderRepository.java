@@ -27,5 +27,5 @@ public interface OrderRepository extends JpaRepository<Order, UUID> {
      * @param isDone Completion flag (typically true)
      * @return List of matching orders
      */
-    List<Order> findByUserIdAndStatusAndIsDone(UUID userId, Status status, boolean isDone);
+    List<Order> findByUserIdAndStatusAndDone(UUID userId, Status status, boolean isDone);
 }
