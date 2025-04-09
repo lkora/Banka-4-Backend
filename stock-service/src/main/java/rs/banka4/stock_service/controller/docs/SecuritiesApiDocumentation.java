@@ -14,6 +14,7 @@ import rs.banka4.stock_service.domain.security.SecurityDto;
 import rs.banka4.stock_service.domain.security.forex.dtos.ForexPairDto;
 import rs.banka4.stock_service.domain.security.future.dtos.FutureDto;
 import rs.banka4.stock_service.domain.security.responses.SecurityOwnershipResponse;
+import rs.banka4.stock_service.domain.security.responses.TotalProfitResponse;
 import rs.banka4.stock_service.domain.security.stock.dtos.StockDto;
 
 public interface SecuritiesApiDocumentation {
@@ -73,5 +74,23 @@ public interface SecuritiesApiDocumentation {
         }
     )
     public ResponseEntity<List<SecurityOwnershipResponse>> getMySecurities();
+
+    @Operation(
+        summary = "Get total stock profit",
+        description = "Calculates total unrealized profit for all stocks in the portfolio",
+        security = @SecurityRequirement(name = "bearerAuth"),
+        responses = {
+            @ApiResponse(
+                responseCode = "200",
+                description = "Successfully calculated total profit",
+                content = @Content(schema = @Schema(implementation = TotalProfitResponse.class))
+            ),
+            @ApiResponse(
+                responseCode = "403",
+                description = "Forbidden"
+            )
+        }
+    )
+    public ResponseEntity<TotalProfitResponse> getTotalUnrealizedProfit();
 
 }

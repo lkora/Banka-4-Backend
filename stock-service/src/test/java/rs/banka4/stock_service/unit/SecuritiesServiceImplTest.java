@@ -1,6 +1,7 @@
 package rs.banka4.stock_service.unit;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
 import com.sun.security.auth.UserPrincipal;
@@ -18,12 +19,15 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import rs.banka4.stock_service.domain.actuaries.db.MonetaryAmount;
+import rs.banka4.stock_service.domain.options.db.Option;
 import rs.banka4.stock_service.domain.orders.db.Direction;
 import rs.banka4.stock_service.domain.orders.db.Order;
 import rs.banka4.stock_service.domain.security.Security;
 import rs.banka4.stock_service.domain.security.forex.db.CurrencyCode;
 import rs.banka4.stock_service.domain.security.forex.db.ForexPair;
+import rs.banka4.stock_service.domain.security.future.db.Future;
 import rs.banka4.stock_service.domain.security.responses.SecurityOwnershipResponse;
+import rs.banka4.stock_service.domain.security.responses.TotalProfitResponse;
 import rs.banka4.stock_service.domain.security.stock.db.Stock;
 import rs.banka4.stock_service.repositories.OrderRepository;
 import rs.banka4.stock_service.service.abstraction.ListingService;
@@ -183,6 +187,64 @@ public class SecuritiesServiceImplTest {
             result.get(0)
                 .profit()
         ).isEqualTo(BigDecimal.ZERO);
+    }
+
+    @Test
+    public void getTotalStockProfit_shouldSumStockProfitsOnly() {
+        // Setup different security types
+        Security stock1 = createStock("AAPL", new BigDecimal("200.00"));
+        Security stock2 = createStock("GOOGL", new BigDecimal("1500.00"));
+        Security future = createFuture("MESA", new BigDecimal("11200.00"));
+        Security forex = createForexPair("FAT", new BigDecimal("1337.00"));
+
+        List<Order> orders = List.of(
+            createOrder(stock1, 10, "180.00", Direction.BUY),
+            createOrder(stock2, 2, "1400.00", Direction.BUY),
+            createOrder(future, 5, "20.00", Direction.BUY),
+            createOrder(forex, 1000, "1.10", Direction.BUY)
+        );
+
+        when(orderRepository.findByUserId(userId)).thenReturn(orders);
+        when(listingService.getListingDetails(any()))
+            .thenAnswer(inv -> {
+                UUID securityId = inv.getArgument(0);
+                return new ListingDetails(
+                    securityId.equals(stock1.getId()) ? new BigDecimal("200.00") :
+                        securityId.equals(stock2.getId()) ? new BigDecimal("1500.00") :
+                            new BigDecimal("0.00")
+                );
+            });
+
+        // When
+        TotalProfitResponse response = service.getTotalUnrealizedProfit().getBody();
+
+        // Then
+        assertThat(response.totalProfit())
+            .isEqualTo(new BigDecimal("540.00")); // (200-180)*10 + (1500-1400)*2
+        assertThat(response.currency()).isEqualTo("USD");
+    }
+
+    private Security createFuture(String ticker, BigDecimal contractSize) {
+        return Future.builder()
+            .id(UUID.randomUUID())
+            .ticker(ticker)
+            .contractSize(contractSize.toBigInteger().longValue())
+            .build();
+    }
+
+    private Security createForexPair(String ticker, BigDecimal price) {
+        return ForexPair.builder()
+            .id(UUID.randomUUID())
+            .ticker(ticker)
+            .exchangeRate(price)
+            .build();
+    }
+
+    private Security createStock(String ticker, BigDecimal price) {
+        return Stock.builder()
+            .id(UUID.randomUUID())
+            .ticker(ticker)
+            .build();
     }
 
     private Order createOrder(Security security, int quantity, String price, Direction direction) {

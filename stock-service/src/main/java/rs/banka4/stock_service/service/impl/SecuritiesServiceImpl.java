@@ -21,6 +21,7 @@ import rs.banka4.stock_service.domain.security.SecurityDto;
 import rs.banka4.stock_service.domain.security.forex.db.ForexPair;
 import rs.banka4.stock_service.domain.security.future.db.Future;
 import rs.banka4.stock_service.domain.security.responses.SecurityOwnershipResponse;
+import rs.banka4.stock_service.domain.security.responses.TotalProfitResponse;
 import rs.banka4.stock_service.domain.security.stock.db.Stock;
 import rs.banka4.stock_service.repositories.OrderRepository;
 import rs.banka4.stock_service.service.abstraction.ListingService;
@@ -49,6 +50,21 @@ public class SecuritiesServiceImpl implements SecuritiesService {
         return holdings.stream()
             .map(this::mapToOrderOwnershipResponse)
             .collect(Collectors.toList());
+    }
+
+    @Override
+    public ResponseEntity<TotalProfitResponse> getTotalUnrealizedProfit() {
+        List<SecurityOwnershipResponse> holdings = getMySecurities();
+
+        BigDecimal totalProfit = holdings.stream()
+            .filter(h -> "Stock".equals(h.type()))
+            .map(SecurityOwnershipResponse::profit)
+            .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        return ResponseEntity.ok(new TotalProfitResponse(
+            totalProfit,
+            "USD"
+        ));
     }
 
     private SecurityOwnershipResponse mapToOrderOwnershipResponse(Order order) {

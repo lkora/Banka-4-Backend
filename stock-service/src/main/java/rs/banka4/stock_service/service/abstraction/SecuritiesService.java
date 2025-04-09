@@ -6,6 +6,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import rs.banka4.stock_service.domain.security.SecurityDto;
 import rs.banka4.stock_service.domain.security.responses.SecurityOwnershipResponse;
+import rs.banka4.stock_service.domain.security.responses.TotalProfitResponse;
 
 
 public interface SecuritiesService {
@@ -18,4 +19,5 @@ public interface SecuritiesService {
 
     List<SecurityOwnershipResponse> getMySecurities();
 
+    ResponseEntity<TotalProfitResponse> getTotalUnrealizedProfit();
 }

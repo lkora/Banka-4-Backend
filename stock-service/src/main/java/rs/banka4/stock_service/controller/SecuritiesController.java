@@ -5,6 +5,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -12,6 +13,7 @@ import org.springframework.web.bind.annotation.RestController;
 import rs.banka4.stock_service.controller.docs.SecuritiesApiDocumentation;
 import rs.banka4.stock_service.domain.security.SecurityDto;
 import rs.banka4.stock_service.domain.security.responses.SecurityOwnershipResponse;
+import rs.banka4.stock_service.domain.security.responses.TotalProfitResponse;
 import rs.banka4.stock_service.service.abstraction.SecuritiesService;
 
 @RestController
@@ -38,6 +40,13 @@ public class SecuritiesController implements SecuritiesApiDocumentation {
     public ResponseEntity<List<SecurityOwnershipResponse>> getMySecurities() {
         List<SecurityOwnershipResponse> response = securityService.getMySecurities();
         return ResponseEntity.ok(response);
+    }
+
+    @Override
+    @GetMapping("/profit")
+//    @PreAuthorize("hasAnyRole('TRADING_CLIENT', 'ACTUARY')")
+    public ResponseEntity<TotalProfitResponse> getTotalUnrealizedProfit() {
+        return securityService.getTotalUnrealizedProfit();
     }
 
 }
