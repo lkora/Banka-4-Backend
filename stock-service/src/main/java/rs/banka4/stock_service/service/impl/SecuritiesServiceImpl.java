@@ -57,8 +57,8 @@ public class SecuritiesServiceImpl implements SecuritiesService {
     }
 
     @Override
-    public ResponseEntity<TotalProfitResponse> getTotalUnrealizedProfit() {
-        List<SecurityOwnershipResponse> holdings = getMySecurities();
+    public ResponseEntity<TotalProfitResponse> getTotalUnrealizedProfit(Authentication authentication) {
+        List<SecurityOwnershipResponse> holdings = getMySecurities(authentication);
 
         BigDecimal totalProfit = holdings.stream()
             .filter(h -> "Stock".equals(h.type()))

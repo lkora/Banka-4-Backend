@@ -209,6 +209,8 @@ public class SecuritiesServiceImplTest {
     @Test
     public void getTotalStockProfit_shouldSumStockProfitsOnly() {
         // Setup different security types
+        Authentication auth = createAuthentication(userId);
+
         Security stock1 = createStock("AAPL", new BigDecimal("200.00"));
         Security stock2 = createStock("GOOGL", new BigDecimal("1500.00"));
         Security future = createFuture("MESA", new BigDecimal("11200.00"));
@@ -225,7 +227,7 @@ public class SecuritiesServiceImplTest {
         when(listingService.getListingDetails(any()))
             .thenAnswer(inv -> {
                 UUID securityId = inv.getArgument(0);
-                return new ListingDetails(
+                return new TestListingDetails(
                     securityId.equals(stock1.getId()) ? new BigDecimal("200.00") :
                         securityId.equals(stock2.getId()) ? new BigDecimal("1500.00") :
                             new BigDecimal("0.00")
@@ -233,7 +235,7 @@ public class SecuritiesServiceImplTest {
             });
 
         // When
-        TotalProfitResponse response = service.getTotalUnrealizedProfit().getBody();
+        TotalProfitResponse response = service.getTotalUnrealizedProfit(auth).getBody();
 
         // Then
         assertThat(response.totalProfit())

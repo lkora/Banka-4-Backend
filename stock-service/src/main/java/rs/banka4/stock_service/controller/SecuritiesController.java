@@ -43,8 +43,8 @@ public class SecuritiesController implements SecuritiesApiDocumentation {
 
     @Override
     @GetMapping("/profit")
-    public ResponseEntity<TotalProfitResponse> getTotalUnrealizedProfit() {
-        return securityService.getTotalUnrealizedProfit();
+    public ResponseEntity<TotalProfitResponse> getTotalUnrealizedProfit(Authentication authentication) {
+        return securityService.getTotalUnrealizedProfit(authentication);
     }
 
 }

@@ -92,6 +92,6 @@ public interface SecuritiesApiDocumentation {
             )
         }
     )
-    public ResponseEntity<TotalProfitResponse> getTotalUnrealizedProfit();
+    public ResponseEntity<TotalProfitResponse> getTotalUnrealizedProfit(Authentication authentication);
 
 }

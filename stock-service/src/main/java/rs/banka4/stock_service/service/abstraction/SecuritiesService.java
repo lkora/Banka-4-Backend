@@ -20,5 +20,5 @@ public interface SecuritiesService {
 
     List<SecurityOwnershipResponse> getMySecurities(Authentication authentication);
 
-    ResponseEntity<TotalProfitResponse> getTotalUnrealizedProfit();
+    ResponseEntity<TotalProfitResponse> getTotalUnrealizedProfit(Authentication authentication);
 }
