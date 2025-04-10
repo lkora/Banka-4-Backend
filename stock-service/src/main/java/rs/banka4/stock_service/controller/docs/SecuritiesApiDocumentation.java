@@ -10,6 +10,7 @@ import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import java.util.List;
 import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import rs.banka4.stock_service.domain.security.SecurityDto;
 import rs.banka4.stock_service.domain.security.forex.dtos.ForexPairDto;
 import rs.banka4.stock_service.domain.security.future.dtos.FutureDto;
@@ -73,7 +74,7 @@ public interface SecuritiesApiDocumentation {
             )
         }
     )
-    public ResponseEntity<List<SecurityOwnershipResponse>> getMySecurities();
+    public ResponseEntity<List<SecurityOwnershipResponse>> getMySecurities(Authentication authentication);
 
     @Operation(
         summary = "Get total stock profit",

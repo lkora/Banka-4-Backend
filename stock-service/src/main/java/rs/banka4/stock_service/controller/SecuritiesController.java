@@ -5,7 +5,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -36,15 +36,13 @@ public class SecuritiesController implements SecuritiesApiDocumentation {
 
     @Override
     @GetMapping("/me")
-//    @PreAuthorize("hasAnyRole('CLIENT', 'ACTUARY')")
-    public ResponseEntity<List<SecurityOwnershipResponse>> getMySecurities() {
-        List<SecurityOwnershipResponse> response = securityService.getMySecurities();
+    public ResponseEntity<List<SecurityOwnershipResponse>> getMySecurities(Authentication authentication) {
+        List<SecurityOwnershipResponse> response = securityService.getMySecurities(authentication);
         return ResponseEntity.ok(response);
     }
 
     @Override
     @GetMapping("/profit")
-//    @PreAuthorize("hasAnyRole('TRADING_CLIENT', 'ACTUARY')")
     public ResponseEntity<TotalProfitResponse> getTotalUnrealizedProfit() {
         return securityService.getTotalUnrealizedProfit();
     }
