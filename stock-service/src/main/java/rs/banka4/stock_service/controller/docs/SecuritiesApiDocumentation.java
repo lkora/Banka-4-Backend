@@ -15,6 +15,7 @@ import rs.banka4.stock_service.domain.security.SecurityDto;
 import rs.banka4.stock_service.domain.security.forex.dtos.ForexPairDto;
 import rs.banka4.stock_service.domain.security.future.dtos.FutureDto;
 import rs.banka4.stock_service.domain.security.responses.SecurityOwnershipResponse;
+import rs.banka4.stock_service.domain.security.responses.TaxSummaryResponse;
 import rs.banka4.stock_service.domain.security.responses.TotalProfitResponse;
 import rs.banka4.stock_service.domain.security.stock.dtos.StockDto;
 
@@ -94,4 +95,22 @@ public interface SecuritiesApiDocumentation {
     )
     public ResponseEntity<TotalProfitResponse> getTotalUnrealizedProfit(Authentication authentication);
 
+
+    @Operation(
+        summary = "Returns the tax summary for the current user.",
+        description = "return a TaxSummaryResponse with paid tax for the current year, unpaid tax for the current month, and currency",
+        security = @SecurityRequirement(name = "bearerAuth"),
+        responses = {
+            @ApiResponse(
+                responseCode = "200",
+                description = "Successfully calculated tax summary",
+                content = @Content(schema = @Schema(implementation = TaxSummaryResponse.class))
+            ),
+            @ApiResponse(
+                responseCode = "403",
+                description = "Forbidden"
+            )
+        }
+    )
+    public ResponseEntity<TaxSummaryResponse> getTaxSummary(Authentication authentication);
 }

@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.RestController;
 import rs.banka4.stock_service.controller.docs.SecuritiesApiDocumentation;
 import rs.banka4.stock_service.domain.security.SecurityDto;
 import rs.banka4.stock_service.domain.security.responses.SecurityOwnershipResponse;
+import rs.banka4.stock_service.domain.security.responses.TaxSummaryResponse;
 import rs.banka4.stock_service.domain.security.responses.TotalProfitResponse;
 import rs.banka4.stock_service.service.abstraction.SecuritiesService;
 
@@ -46,5 +47,12 @@ public class SecuritiesController implements SecuritiesApiDocumentation {
     public ResponseEntity<TotalProfitResponse> getTotalUnrealizedProfit(Authentication authentication) {
         return securityService.getTotalUnrealizedProfit(authentication);
     }
+
+    @Override
+    @GetMapping("/tax")
+    public ResponseEntity<TaxSummaryResponse> getTaxSummary(Authentication authentication) {
+        return securityService.getTaxSummary(authentication);
+    }
+
 
 }

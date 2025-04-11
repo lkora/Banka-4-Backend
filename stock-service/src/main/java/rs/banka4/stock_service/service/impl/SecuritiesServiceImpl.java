@@ -2,6 +2,7 @@ package rs.banka4.stock_service.service.impl;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.time.Month;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Objects;
@@ -23,6 +24,7 @@ import rs.banka4.stock_service.domain.security.SecurityDto;
 import rs.banka4.stock_service.domain.security.forex.db.ForexPair;
 import rs.banka4.stock_service.domain.security.future.db.Future;
 import rs.banka4.stock_service.domain.security.responses.SecurityOwnershipResponse;
+import rs.banka4.stock_service.domain.security.responses.TaxSummaryResponse;
 import rs.banka4.stock_service.domain.security.responses.TotalProfitResponse;
 import rs.banka4.stock_service.domain.security.responses.SecurityType;
 import rs.banka4.stock_service.domain.security.stock.db.Stock;
@@ -69,6 +71,99 @@ public class SecuritiesServiceImpl implements SecuritiesService {
             totalProfit,
             "USD"
         ));
+    }
+
+    // TODO: Maybe add the snapshot summary to the repository so that the supervisor can call this function monthly or the privileged user can initiate the tax collection manually.
+    @Override
+    public ResponseEntity<TaxSummaryResponse> getTaxSummary(Authentication authentication) {
+        UUID userId = getCurrentUserId(authentication);
+        List<Order> orders = orderRepository.findByUserId(userId);
+
+        OffsetDateTime now = OffsetDateTime.now();
+        int currentYear = now.getYear();
+        Month currentMonth = now.getMonth();
+
+        BigDecimal paidTaxThisYear = BigDecimal.ZERO;
+        BigDecimal unpaidTaxThisMonth = BigDecimal.ZERO;
+
+        for (Order order : orders) {
+            // Only consider orders for stocks
+            if (!(order.getAsset() instanceof Stock)) {
+                continue;
+            }
+            // Only consider sell orders that have been completed
+            if (order.getDirection() != Direction.SELL || !order.isDone()) {
+                continue;
+            }
+            // We assume the transaction time is in createdAt.
+            OffsetDateTime orderDate = order.getCreatedAt();
+            if (orderDate.getYear() != currentYear) {
+                continue;
+            }
+
+            BigDecimal tax = computeTaxForSellOrder(order, userId);
+            if (orderDate.getMonth() == currentMonth) {
+                unpaidTaxThisMonth = unpaidTaxThisMonth.add(tax);
+            } else {
+                paidTaxThisYear = paidTaxThisYear.add(tax);
+            }
+        }
+
+        // Assuming value in RSD since we do not have the exchange service here?
+        TaxSummaryResponse response = new TaxSummaryResponse(paidTaxThisYear, unpaidTaxThisMonth, "RSD");
+        return ResponseEntity.ok(response);
+    }
+
+    /**
+     * Computes the tax for a single sell order for a stock.
+     * <p>
+     * The method calculates the average cost for the stock from all completed buy orders,
+     * then computes the capital gain from this sell order:
+     * <br>
+     *     gain per unit = (sell price per unit - average purchase price)
+     * <br>
+     *     total gain = gain per unit * quantity sold.
+     * <br>
+     * If there is a positive gain, a tax of 15% is computed. Otherwise, the tax is zero.
+     * </p>
+     *
+     * @param sellOrder the completed sell order for which tax is to be computed
+     * @param userId    the current user's UUID
+     * @return the tax amount for the given sell order (scaled to 2 decimal places)
+     */
+    private BigDecimal computeTaxForSellOrder(Order sellOrder, UUID userId) {
+        Security stock = (Security) sellOrder.getAsset();
+        // Retrieve all completed BUY orders for the same stock.
+        List<Order> buyOrders = orderRepository.findByUserIdAndAssetAndDirectionAndIsDone(
+            userId, stock, Direction.BUY, true
+        );
+
+        if (buyOrders.isEmpty()) {
+            return BigDecimal.ZERO;
+        }
+
+        BigDecimal totalBuyCost = BigDecimal.ZERO;
+        BigDecimal totalBuyQuantity = BigDecimal.ZERO;
+        for (Order buyOrder : buyOrders) {
+            BigDecimal quantity = BigDecimal.valueOf(buyOrder.getQuantity());
+            totalBuyCost = totalBuyCost.add(buyOrder.getPricePerUnit().getAmount().multiply(quantity));
+            totalBuyQuantity = totalBuyQuantity.add(quantity);
+        }
+
+        if (totalBuyQuantity.compareTo(BigDecimal.ZERO) == 0) {
+            return BigDecimal.ZERO;
+        }
+
+        BigDecimal averageCost = totalBuyCost.divide(totalBuyQuantity, RoundingMode.HALF_UP);
+        BigDecimal sellPrice = sellOrder.getPricePerUnit().getAmount();
+        BigDecimal gainPerUnit = sellPrice.subtract(averageCost);
+        if (gainPerUnit.compareTo(BigDecimal.ZERO) <= 0) {
+            return BigDecimal.ZERO;
+        }
+
+        BigDecimal totalGain = gainPerUnit.multiply(BigDecimal.valueOf(sellOrder.getQuantity()));
+        BigDecimal tax = totalGain.multiply(new BigDecimal("0.15"));
+        return tax.setScale(2, RoundingMode.HALF_UP);
     }
 
     /**

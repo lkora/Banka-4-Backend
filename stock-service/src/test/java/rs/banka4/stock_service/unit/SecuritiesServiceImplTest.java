@@ -1,7 +1,10 @@
 package rs.banka4.stock_service.unit;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
 
 import com.sun.security.auth.UserPrincipal;
@@ -17,6 +20,7 @@ import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -26,11 +30,13 @@ import rs.banka4.stock_service.domain.listing.dtos.ListingDetailsDto;
 import rs.banka4.stock_service.domain.options.db.Option;
 import rs.banka4.stock_service.domain.orders.db.Direction;
 import rs.banka4.stock_service.domain.orders.db.Order;
+import rs.banka4.stock_service.domain.orders.db.Status;
 import rs.banka4.stock_service.domain.security.Security;
 import rs.banka4.stock_service.domain.security.forex.db.CurrencyCode;
 import rs.banka4.stock_service.domain.security.forex.db.ForexPair;
 import rs.banka4.stock_service.domain.security.future.db.Future;
 import rs.banka4.stock_service.domain.security.responses.SecurityOwnershipResponse;
+import rs.banka4.stock_service.domain.security.responses.TaxSummaryResponse;
 import rs.banka4.stock_service.domain.security.responses.TotalProfitResponse;
 import rs.banka4.stock_service.domain.security.stock.db.Stock;
 import rs.banka4.stock_service.repositories.OrderRepository;
@@ -242,6 +248,207 @@ public class SecuritiesServiceImplTest {
             .isEqualTo(new BigDecimal("540.00")); // (200-180)*10 + (1500-1400)*2
         assertThat(response.currency()).isEqualTo("USD");
     }
+
+    /**
+     * Test that when no orders exist the tax summary returns zero for both paid and unpaid tax.
+     */
+    @Test
+    public void testGetTaxSummary_noOrders() {
+        Authentication auth = createAuthentication(userId);
+        when(orderRepository.findByUserId(userId)).thenReturn(Collections.emptyList());
+
+        ResponseEntity<TaxSummaryResponse> response = service.getTaxSummary(auth);
+        TaxSummaryResponse summary = response.getBody();
+
+        assertNotNull(summary);
+        // Expect both tax amounts to be zero
+        assertEquals(BigDecimal.ZERO, summary.paidTaxThisYear());
+        assertEquals(BigDecimal.ZERO, summary.unpaidTaxThisMonth());
+        assertEquals("RSD", summary.currency());
+    }
+
+    /**
+     * Test that a sell order created in the current month calculates unpaid tax.
+     * Scenario:
+     *   - A BUY order: quantity 100 @ 100.00 => average cost 100.00
+     *   - A SELL order: quantity 50 @ 150.00 => gain per unit = 50; total gain = 50 * 50 = 2500;
+     *     Tax = 15% of 2500 = 375.00
+     * The SELL order is dated in the current month so the tax is treated as "unpaid".
+     */
+    @Test
+    public void testGetTaxSummary_sellOrder_currentMonth() {
+        Authentication auth = createAuthentication(userId);
+        Stock stock = Stock.builder()
+            .id(UUID.randomUUID())
+            .ticker("TEST")
+            .name("Test Stock")
+            .build();
+
+        OffsetDateTime now = OffsetDateTime.now();
+        // Create a BUY order (completed)
+        Order buyOrder = Order.builder()
+            .userId(userId)
+            .asset(stock)
+            .quantity(100)
+            .pricePerUnit(new MonetaryAmount(new BigDecimal("100.00"), CurrencyCode.USD))
+            .direction(Direction.BUY)
+            .status(Status.APPROVED)
+            .isDone(true)
+            .createdAt(now.minusDays(10)) // earlier in current month/year
+            .lastModified(now.minusDays(10))
+            .contractSize(1)
+            .remainingPortions(100)
+            .afterHours(false)
+            .accountId(UUID.randomUUID())
+            .used(false)
+            .build();
+
+        // Create a SELL order (completed) in the current month
+        Order sellOrder = Order.builder()
+            .userId(userId)
+            .asset(stock)
+            .quantity(50)
+            .pricePerUnit(new MonetaryAmount(new BigDecimal("150.00"), CurrencyCode.USD))
+            .direction(Direction.SELL)
+            .status(Status.APPROVED)
+            .isDone(true)
+            .createdAt(now) // current month
+            .lastModified(now)
+            .contractSize(1)
+            .remainingPortions(50)
+            .afterHours(false)
+            .accountId(UUID.randomUUID())
+            .used(false)
+            .build();
+
+        // The orderRepository.findByUserId should return both orders, though only the SELL order is processed.
+        when(orderRepository.findByUserId(userId)).thenReturn(List.of(buyOrder, sellOrder));
+        // When fetching BUY orders for tax computation, return the buy order.
+        when(orderRepository.findByUserIdAndAssetAndDirectionAndIsDone(eq(userId), eq(stock), eq(Direction.BUY), eq(true)))
+            .thenReturn(List.of(buyOrder));
+
+        ResponseEntity<TaxSummaryResponse> response = service.getTaxSummary(auth);
+        TaxSummaryResponse summary = response.getBody();
+
+        assertNotNull(summary);
+        // As computed: tax = (150 - 100)*50*0.15 = 375.00. Since sell order is in current month:
+        assertEquals(new BigDecimal("0.00"), summary.paidTaxThisYear());
+        assertEquals(new BigDecimal("375.00"), summary.unpaidTaxThisMonth());
+        assertEquals("RSD", summary.currency());
+    }
+
+    /**
+     * Test that a sell order created in a previous month in the current year results in paid tax.
+     * The tax amount is computed similarly to the previous test, but since the order's createdAt is from last month,
+     * its tax is recorded as "paidTaxThisYear".
+     */
+    @Test
+    public void testGetTaxSummary_sellOrder_previousMonth() {
+        Authentication auth = createAuthentication(userId);
+        Stock stock = Stock.builder()
+            .id(UUID.randomUUID())
+            .ticker("TEST")
+            .name("Test Stock")
+            .build();
+
+        OffsetDateTime now = OffsetDateTime.now();
+        // Create a BUY order
+        Order buyOrder = Order.builder()
+            .userId(userId)
+            .asset(stock)
+            .quantity(100)
+            .pricePerUnit(new MonetaryAmount(new BigDecimal("100.00"), CurrencyCode.USD))
+            .direction(Direction.BUY)
+            .status(Status.APPROVED)
+            .isDone(true)
+            .createdAt(now.minusDays(20))
+            .lastModified(now.minusDays(20))
+            .contractSize(1)
+            .remainingPortions(100)
+            .afterHours(false)
+            .accountId(UUID.randomUUID())
+            .used(false)
+            .build();
+
+        // Create a SELL order from a previous month
+        OffsetDateTime previousMonthDate = now.minusMonths(1);
+        Order sellOrder = Order.builder()
+            .userId(userId)
+            .asset(stock)
+            .quantity(50)
+            .pricePerUnit(new MonetaryAmount(new BigDecimal("150.00"), CurrencyCode.USD))
+            .direction(Direction.SELL)
+            .status(Status.APPROVED)
+            .isDone(true)
+            .createdAt(previousMonthDate)
+            .lastModified(previousMonthDate)
+            .contractSize(1)
+            .remainingPortions(50)
+            .afterHours(false)
+            .accountId(UUID.randomUUID())
+            .used(false)
+            .build();
+
+        when(orderRepository.findByUserId(userId)).thenReturn(List.of(buyOrder, sellOrder));
+        when(orderRepository.findByUserIdAndAssetAndDirectionAndIsDone(eq(userId), eq(stock), eq(Direction.BUY), eq(true)))
+            .thenReturn(List.of(buyOrder));
+
+        ResponseEntity<TaxSummaryResponse> response = service.getTaxSummary(auth);
+        TaxSummaryResponse summary = response.getBody();
+
+        assertNotNull(summary);
+        // Expected tax is the same: 375.00, but since sell order is not in the current month it counts as paid tax.
+        assertEquals(new BigDecimal("375.00"), summary.paidTaxThisYear());
+        assertEquals(new BigDecimal("0.00"), summary.unpaidTaxThisMonth());
+        assertEquals("RSD", summary.currency());
+    }
+
+    /**
+     * Test that orders for non-stock assets (e.g. a Future) are ignored.
+     */
+    @Test
+    public void testGetTaxSummary_ignoreNonStockOrder() {
+        Authentication auth = createAuthentication(userId);
+        // Create a non-stock asset (Future in this example)
+        Future futureAsset = Future.builder()
+            .id(UUID.randomUUID())
+            .ticker("FUT123")
+            .name("Test Future")
+            .build();
+
+        OffsetDateTime now = OffsetDateTime.now();
+        Order sellOrder = Order.builder()
+            .userId(userId)
+            .asset(futureAsset)
+            .quantity(50)
+            .pricePerUnit(new MonetaryAmount(new BigDecimal("150.00"), CurrencyCode.USD))
+            .direction(Direction.SELL)
+            .status(Status.APPROVED)
+            .isDone(true)
+            .createdAt(now)
+            .lastModified(now)
+            .contractSize(1)
+            .remainingPortions(50)
+            .afterHours(false)
+            .accountId(UUID.randomUUID())
+            .used(false)
+            .build();
+
+        when(orderRepository.findByUserId(userId)).thenReturn(List.of(sellOrder));
+        // No BUY orders for non-stock asset
+        when(orderRepository.findByUserIdAndAssetAndDirectionAndIsDone(eq(userId), eq(futureAsset), eq(Direction.BUY), eq(true)))
+            .thenReturn(Collections.emptyList());
+
+        ResponseEntity<TaxSummaryResponse> response = service.getTaxSummary(auth);
+        TaxSummaryResponse summary = response.getBody();
+
+        assertNotNull(summary);
+        // Since the asset is not a stock, no tax should be computed.
+        assertEquals(BigDecimal.ZERO, summary.paidTaxThisYear());
+        assertEquals(BigDecimal.ZERO, summary.unpaidTaxThisMonth());
+        assertEquals("RSD", summary.currency());
+    }
+
 
     private Security createFuture(String ticker, BigDecimal contractSize) {
         return Future.builder()
