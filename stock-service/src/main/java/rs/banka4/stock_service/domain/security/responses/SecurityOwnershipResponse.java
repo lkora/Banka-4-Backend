@@ -8,7 +8,7 @@ public record SecurityOwnershipResponse(
     @Schema(
         description = "Type of security (e.g., Stock, Future, Forex)",
         example = "Stock"
-    ) SecurityType type,
+    ) SecurityTypeDto type,
 
     @Schema(
         description = "Symbol of the security",

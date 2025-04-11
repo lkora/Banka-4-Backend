@@ -1,6 +1,6 @@
 # A -*- dockerfile -*- for the exchange office
 
-FROM python:3.13
+FROM harbor.k8s.elab.rs/banka-4/python:3.13
 
 RUN mkdir /code
 ADD exchange-office/LICENSE /code/LICENSE
@@ -14,5 +14,6 @@ RUN mkdir -p /work /usr/var/banka4_exchange/
 
 COPY docker/exchange-config.py /usr/local/var/banka4_exchange-instance/config.py
 
+VOLUME /data
 ENTRYPOINT ["gunicorn"]
 CMD ["-b", "0.0.0.0:8000", "banka4_exchange.wsgi:app"]

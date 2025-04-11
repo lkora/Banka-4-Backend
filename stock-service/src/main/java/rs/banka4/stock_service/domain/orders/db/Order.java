@@ -4,8 +4,9 @@ import jakarta.persistence.*;
 import java.time.OffsetDateTime;
 import java.util.UUID;
 import lombok.*;
-import org.springframework.data.annotation.CreatedDate;
-import org.springframework.data.annotation.LastModifiedDate;
+import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.UpdateTimestamp;
+import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 import rs.banka4.stock_service.domain.actuaries.db.MonetaryAmount;
 import rs.banka4.stock_service.domain.options.db.Asset;
 
@@ -15,6 +16,7 @@ import rs.banka4.stock_service.domain.options.db.Asset;
 @Getter
 @Setter
 @RequiredArgsConstructor
+@EntityListeners(AuditingEntityListener.class)
 @Table(name = "orders")
 public class Order {
     @Id
@@ -53,11 +55,11 @@ public class Order {
     @Column(nullable = false)
     private boolean isDone;
 
-    @LastModifiedDate
+    @UpdateTimestamp
     @Column(nullable = false)
     private OffsetDateTime lastModified;
 
-    @CreatedDate
+    @CreationTimestamp
     @Column(nullable = false)
     private OffsetDateTime createdAt;
 

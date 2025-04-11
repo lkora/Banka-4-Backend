@@ -37,14 +37,18 @@ public class SecuritiesController implements SecuritiesApiDocumentation {
 
     @Override
     @GetMapping("/me")
-    public ResponseEntity<List<SecurityOwnershipResponse>> getMySecurities(Authentication authentication) {
+    public ResponseEntity<List<SecurityOwnershipResponse>> getMySecurities(
+        Authentication authentication
+    ) {
         List<SecurityOwnershipResponse> response = securityService.getMySecurities(authentication);
         return ResponseEntity.ok(response);
     }
 
     @Override
     @GetMapping("/profit")
-    public ResponseEntity<TotalProfitResponse> getTotalUnrealizedProfit(Authentication authentication) {
+    public ResponseEntity<TotalProfitResponse> getTotalUnrealizedProfit(
+        Authentication authentication
+    ) {
         return securityService.getTotalUnrealizedProfit(authentication);
     }
 

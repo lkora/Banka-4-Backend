@@ -13,6 +13,8 @@ import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.Profile;
 import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Component;
+import retrofit2.Response;
+import rs.banka4.rafeisen.common.currency.CurrencyCode;
 import rs.banka4.stock_service.config.retrofit.AlphaVantageService;
 import rs.banka4.stock_service.domain.exchanges.db.Exchange;
 import rs.banka4.stock_service.domain.listing.db.Listing;
@@ -21,7 +23,6 @@ import rs.banka4.stock_service.domain.listing.dtos.ListingApiDto;
 import rs.banka4.stock_service.domain.options.db.Option;
 import rs.banka4.stock_service.domain.options.db.OptionsMaker;
 import rs.banka4.stock_service.domain.security.Security;
-import rs.banka4.stock_service.domain.security.forex.db.CurrencyCode;
 import rs.banka4.stock_service.domain.security.forex.db.CurrencyMapper;
 import rs.banka4.stock_service.domain.security.forex.db.ForexLiquidity;
 import rs.banka4.stock_service.domain.security.forex.db.ForexPair;
@@ -301,29 +302,33 @@ public class TestDataRunner implements CommandLineRunner {
             }
 
             for (ForexPair fp : forexPairRepository.findAll()) {
-                Listing.builder()
-                    .id(new UUID(0L, id++))
-                    .ask(fp.getExchangeRate())
-                    .bid(fp.getExchangeRate())
-                    .exchange(srbForexExchange)
-                    .lastRefresh(OffsetDateTime.now())
-                    .active(true)
-                    .security(fp)
-                    .contractSize(1)
-                    .build();
+                listings.add(
+                    Listing.builder()
+                        .id(new UUID(0L, id++))
+                        .ask(fp.getExchangeRate())
+                        .bid(fp.getExchangeRate())
+                        .exchange(srbForexExchange)
+                        .lastRefresh(OffsetDateTime.now())
+                        .active(true)
+                        .security(fp)
+                        .contractSize(1)
+                        .build()
+                );
             }
 
             for (Future f : futureRepository.findAll()) {
-                Listing.builder()
-                    .id(new UUID(0L, id++))
-                    .ask(new BigDecimal(1000100))
-                    .bid(new BigDecimal(1000000))
-                    .exchange(srbFutureExchange)
-                    .lastRefresh(OffsetDateTime.now())
-                    .active(true)
-                    .security(f)
-                    .contractSize(1)
-                    .build();
+                listings.add(
+                    Listing.builder()
+                        .id(new UUID(0L, id++))
+                        .ask(new BigDecimal(1000100))
+                        .bid(new BigDecimal(1000000))
+                        .exchange(srbFutureExchange)
+                        .lastRefresh(OffsetDateTime.now())
+                        .active(true)
+                        .security(f)
+                        .contractSize(1)
+                        .build()
+                );
             }
 
             listingRepository.saveAllAndFlush(listings);
@@ -339,16 +344,8 @@ public class TestDataRunner implements CommandLineRunner {
         retrofit2.Call<StockInfoDto> call =
             alphaRetrofit.getStockInfo("OVERVIEW", ticker, vantageKey);
 
-        StockInfoDto stockInfoDto =
-            call.execute()
-                .body();
-
-        /*
-         * System.out.println("divident yield: " + dividendYield);
-         * System.out.println(outstandingShares); System.out.println(marketCap);
-         * System.out.println(name); System.out.println("--------------");
-         */
-
+        Response<StockInfoDto> stockInfoDtoResponse = call.execute();
+        StockInfoDto stockInfoDto = stockInfoDtoResponse.body();
 
         BigDecimal divYield = new BigDecimal(0.0);
         try {
@@ -363,13 +360,19 @@ public class TestDataRunner implements CommandLineRunner {
             return null;
         }
 
+        BigDecimal marketCap = null;
+        try {
+            marketCap = new BigDecimal(stockInfoDto.marketCap());
+        } catch (Exception e) {
+        }
+
         return Stock.builder()
             .id(new UUID(0L, id))
             .name(stockInfoDto.name())
             .dividendYield(divYield)
             .outstandingShares(outstandingSharesLong)
             .createdAt(OffsetDateTime.now())
-            .marketCap(new BigDecimal(stockInfoDto.marketCap()))
+            .marketCap(marketCap)
             .ticker(ticker)
             .build();
     }
