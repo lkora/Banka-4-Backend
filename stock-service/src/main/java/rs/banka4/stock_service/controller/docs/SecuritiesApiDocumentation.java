@@ -97,5 +97,4 @@ public interface SecuritiesApiDocumentation {
     public ResponseEntity<TotalProfitResponse> getTotalUnrealizedProfit(
         Authentication authentication
     );
-
 }
