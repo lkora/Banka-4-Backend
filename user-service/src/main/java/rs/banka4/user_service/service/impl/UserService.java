@@ -26,15 +26,14 @@ public class UserService {
     }
 
     public boolean isPhoneNumberValid(String phoneNumber) {
+        if (phoneNumber == null) return false;
 
         String regex = "^(\\+3816|06)(\\d{7,8}|(77|78)\\d{5,6})$";
 
         Pattern pattern = Pattern.compile(regex);
-
         Matcher matcher = pattern.matcher(phoneNumber);
 
         return matcher.matches();
-
     }
 
     public void sendVerificationEmail(String firstName, String email) {

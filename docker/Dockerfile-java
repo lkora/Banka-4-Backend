@@ -1,4 +1,5 @@
-# Dockerfile for the Gradle and Java-based backend services -*- dockerfile -*-
+# A -*- dockerfile -*- for the Gradle and Java-based backend services,
+# optimized for 'compose watch'
 # Copyright (C) 2025  Arsen Arsenović <aarsenovic8422rn@raf.rs>
 
 # This program is free software: you can redistribute it and/or modify

@@ -74,7 +74,9 @@ public interface SecuritiesApiDocumentation {
             )
         }
     )
-    public ResponseEntity<List<SecurityOwnershipResponse>> getMySecurities(Authentication authentication);
+    public ResponseEntity<List<SecurityOwnershipResponse>> getMySecurities(
+        Authentication authentication
+    );
 
     @Operation(
         summary = "Get total stock profit",
@@ -92,6 +94,8 @@ public interface SecuritiesApiDocumentation {
             )
         }
     )
-    public ResponseEntity<TotalProfitResponse> getTotalUnrealizedProfit(Authentication authentication);
+    public ResponseEntity<TotalProfitResponse> getTotalUnrealizedProfit(
+        Authentication authentication
+    );
 
 }

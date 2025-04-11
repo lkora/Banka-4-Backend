@@ -143,18 +143,18 @@ public class SecuritiesControllerTest {
     @Test
     public void testGetTotalStockProfit_mixedSecurities() throws Exception {
         // Get required securities
-        Stock stock1 = (Stock) securityRepository
-            .findById(AssetGenerator.STOCK_EX1_UUID)
-            .orElseThrow();
-        Stock stock2 = (Stock) securityRepository
-            .findById(AssetGenerator.STOCK_EX2_UUID)
-            .orElseThrow();
-        Security option = securityRepository
-            .findById(AssetGenerator.OPTION_EX1_CALL_UUID)
-            .orElseThrow();
-        Security forex = securityRepository
-            .findById(AssetGenerator.FOREX_EUR_USD_UUID)
-            .orElseThrow();
+        Stock stock1 =
+            (Stock) securityRepository.findById(AssetGenerator.STOCK_EX1_UUID)
+                .orElseThrow();
+        Stock stock2 =
+            (Stock) securityRepository.findById(AssetGenerator.STOCK_EX2_UUID)
+                .orElseThrow();
+        Security option =
+            securityRepository.findById(AssetGenerator.OPTION_EX1_CALL_UUID)
+                .orElseThrow();
+        Security forex =
+            securityRepository.findById(AssetGenerator.FOREX_EUR_USD_UUID)
+                .orElseThrow();
 
         // Create listings with current prices
         createListingWithPrice(stock1, "200.00");
@@ -163,10 +163,10 @@ public class SecuritiesControllerTest {
         createListingWithPrice(forex, "1.15");
 
         // Create orders
-        createBuyOrder(stock1, 10, "180.00");  // Profit: (200-180)*10 = 200
-        createBuyOrder(stock2, 2, "1400.00");  // Profit: (1500-1400)*2 = 200
-        createBuyOrder(option, 5, "20.00");    // Should be ignored
-        createBuyOrder(forex, 1000, "1.10");   // Should be ignored
+        createBuyOrder(stock1, 10, "180.00"); // Profit: (200-180)*10 = 200
+        createBuyOrder(stock2, 2, "1400.00"); // Profit: (1500-1400)*2 = 200
+        createBuyOrder(option, 5, "20.00"); // Should be ignored
+        createBuyOrder(forex, 1000, "1.10"); // Should be ignored
 
         mvc.get()
             .uri("/securities/me/total-profit")
@@ -185,12 +185,12 @@ public class SecuritiesControllerTest {
     @Test
     public void testGetTotalStockProfit_noStocks() throws Exception {
         // Create non-stock holdings
-        Security option = securityRepository
-            .findById(AssetGenerator.OPTION_EX1_CALL_UUID)
-            .orElseThrow();
-        Security forex = securityRepository
-            .findById(AssetGenerator.FOREX_EUR_USD_UUID)
-            .orElseThrow();
+        Security option =
+            securityRepository.findById(AssetGenerator.OPTION_EX1_CALL_UUID)
+                .orElseThrow();
+        Security forex =
+            securityRepository.findById(AssetGenerator.FOREX_EUR_USD_UUID)
+                .orElseThrow();
 
         createListingWithPrice(option, "25.00");
         createListingWithPrice(forex, "1.15");
@@ -213,12 +213,12 @@ public class SecuritiesControllerTest {
 
     @Test
     public void testGetTotalStockProfit_negativeProfit() throws Exception {
-        Stock stock = (Stock) securityRepository
-            .findById(AssetGenerator.STOCK_EX1_UUID)
-            .orElseThrow();
+        Stock stock =
+            (Stock) securityRepository.findById(AssetGenerator.STOCK_EX1_UUID)
+                .orElseThrow();
 
         createListingWithPrice(stock, "150.00");
-        createBuyOrder(stock, 100, "160.00");  // Profit: (150-160)*100 = -1000
+        createBuyOrder(stock, 100, "160.00"); // Profit: (150-160)*100 = -1000
 
         mvc.get()
             .uri("/securities/me/total-profit")
@@ -235,24 +235,28 @@ public class SecuritiesControllerTest {
     }
 
     private void createBuyOrder(Security security, int quantity, String buyPrice) {
-        Order order = Order.builder()
-            .userId(this.userId)
-            .asset(security)
-            .quantity(quantity)
-            .pricePerUnit(new MonetaryAmount(new BigDecimal(buyPrice), CurrencyCode.USD))
-            .direction(Direction.BUY)
-            .isDone(true)
-            .build();
+        Order order =
+            Order.builder()
+                .userId(this.userId)
+                .asset(security)
+                .quantity(quantity)
+                .pricePerUnit(new MonetaryAmount(new BigDecimal(buyPrice), CurrencyCode.USD))
+                .direction(Direction.BUY)
+                .isDone(true)
+                .build();
         orderRepository.save(order);
     }
 
     private void createListingWithPrice(Security security, String price) {
-        Exchange exchange = exchangeRepo.findAll().get(0);
-        Listing listing = Listing.builder()
-            .security(security)
-            .exchange(exchange)
-            .ask(new BigDecimal(price))
-            .build();
+        Exchange exchange =
+            exchangeRepo.findAll()
+                .get(0);
+        Listing listing =
+            Listing.builder()
+                .security(security)
+                .exchange(exchange)
+                .ask(new BigDecimal(price))
+                .build();
         listingRepo.save(listing);
     }
 

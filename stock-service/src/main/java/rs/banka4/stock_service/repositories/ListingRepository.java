@@ -21,4 +21,7 @@ public interface ListingRepository extends
     Optional<Listing> getLatestListing(UUID securityId, Limit limit);
 
     Listing findListingBySecurity(Security security);
+
+    Optional<Listing> findBySecurityIdAndActiveTrue(UUID assetId);
+
 }
