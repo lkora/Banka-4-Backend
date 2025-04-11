@@ -23,8 +23,8 @@ import rs.banka4.stock_service.domain.security.SecurityDto;
 import rs.banka4.stock_service.domain.security.forex.db.ForexPair;
 import rs.banka4.stock_service.domain.security.future.db.Future;
 import rs.banka4.stock_service.domain.security.responses.SecurityOwnershipResponse;
-import rs.banka4.stock_service.domain.security.responses.TaxSummaryResponse;
 import rs.banka4.stock_service.domain.security.responses.SecurityTypeDto;
+import rs.banka4.stock_service.domain.security.responses.TaxSummaryResponse;
 import rs.banka4.stock_service.domain.security.responses.TotalProfitResponse;
 import rs.banka4.stock_service.domain.security.stock.db.Stock;
 import rs.banka4.stock_service.repositories.OrderRepository;
@@ -72,7 +72,8 @@ public class SecuritiesServiceImpl implements SecuritiesService {
         return ResponseEntity.ok(new TotalProfitResponse(totalProfit, "USD"));
     }
 
-    // TODO: Maybe add the snapshot summary to the repository so that the supervisor can call this function monthly or the privileged user can initiate the tax collection manually.
+    // TODO: Maybe add the snapshot summary to the repository so that the supervisor can call this
+    // function monthly or the privileged user can initiate the tax collection manually.
     @Override
     public ResponseEntity<TaxSummaryResponse> getTaxSummary(Authentication authentication) {
         UUID userId = getCurrentUserId(authentication);
@@ -109,33 +110,35 @@ public class SecuritiesServiceImpl implements SecuritiesService {
         }
 
         // Assuming value in RSD since we do not have the exchange service here?
-        TaxSummaryResponse response = new TaxSummaryResponse(paidTaxThisYear, unpaidTaxThisMonth, "RSD");
+        TaxSummaryResponse response =
+            new TaxSummaryResponse(paidTaxThisYear, unpaidTaxThisMonth, "RSD");
         return ResponseEntity.ok(response);
     }
 
     /**
      * Computes the tax for a single sell order for a stock.
      * <p>
-     * The method calculates the average cost for the stock from all completed buy orders,
-     * then computes the capital gain from this sell order:
-     * <br>
-     *     gain per unit = (sell price per unit - average purchase price)
-     * <br>
-     *     total gain = gain per unit * quantity sold.
-     * <br>
+     * The method calculates the average cost for the stock from all completed buy orders, then
+     * computes the capital gain from this sell order: <br>
+     * gain per unit = (sell price per unit - average purchase price) <br>
+     * total gain = gain per unit * quantity sold. <br>
      * If there is a positive gain, a tax of 15% is computed. Otherwise, the tax is zero.
      * </p>
      *
      * @param sellOrder the completed sell order for which tax is to be computed
-     * @param userId    the current user's UUID
+     * @param userId the current user's UUID
      * @return the tax amount for the given sell order (scaled to 2 decimal places)
      */
     private BigDecimal computeTaxForSellOrder(Order sellOrder, UUID userId) {
         Security stock = (Security) sellOrder.getAsset();
         // Retrieve all completed BUY orders for the same stock.
-        List<Order> buyOrders = orderRepository.findByUserIdAndAssetAndDirectionAndIsDone(
-            userId, stock, Direction.BUY, true
-        );
+        List<Order> buyOrders =
+            orderRepository.findByUserIdAndAssetAndDirectionAndIsDone(
+                userId,
+                stock,
+                Direction.BUY,
+                true
+            );
 
         if (buyOrders.isEmpty()) {
             return BigDecimal.ZERO;
@@ -145,7 +148,12 @@ public class SecuritiesServiceImpl implements SecuritiesService {
         BigDecimal totalBuyQuantity = BigDecimal.ZERO;
         for (Order buyOrder : buyOrders) {
             BigDecimal quantity = BigDecimal.valueOf(buyOrder.getQuantity());
-            totalBuyCost = totalBuyCost.add(buyOrder.getPricePerUnit().getAmount().multiply(quantity));
+            totalBuyCost =
+                totalBuyCost.add(
+                    buyOrder.getPricePerUnit()
+                        .getAmount()
+                        .multiply(quantity)
+                );
             totalBuyQuantity = totalBuyQuantity.add(quantity);
         }
 
@@ -154,7 +162,9 @@ public class SecuritiesServiceImpl implements SecuritiesService {
         }
 
         BigDecimal averageCost = totalBuyCost.divide(totalBuyQuantity, RoundingMode.HALF_UP);
-        BigDecimal sellPrice = sellOrder.getPricePerUnit().getAmount();
+        BigDecimal sellPrice =
+            sellOrder.getPricePerUnit()
+                .getAmount();
         BigDecimal gainPerUnit = sellPrice.subtract(averageCost);
         if (gainPerUnit.compareTo(BigDecimal.ZERO) <= 0) {
             return BigDecimal.ZERO;

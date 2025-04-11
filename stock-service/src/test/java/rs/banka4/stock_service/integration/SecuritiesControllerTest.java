@@ -1,5 +1,6 @@
 package rs.banka4.stock_service.integration;
 
+
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 import java.util.UUID;
@@ -8,7 +9,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.http.ResponseEntity;
 import org.springframework.test.web.servlet.assertj.MockMvcTester;
 import rs.banka4.stock_service.domain.actuaries.db.MonetaryAmount;
 import rs.banka4.stock_service.domain.exchanges.db.Exchange;
@@ -19,7 +19,6 @@ import rs.banka4.stock_service.domain.orders.db.OrderType;
 import rs.banka4.stock_service.domain.orders.db.Status;
 import rs.banka4.stock_service.domain.security.Security;
 import rs.banka4.stock_service.domain.security.forex.db.CurrencyCode;
-import rs.banka4.stock_service.domain.security.responses.TaxSummaryResponse;
 import rs.banka4.stock_service.domain.security.stock.db.Stock;
 import rs.banka4.stock_service.repositories.*;
 import rs.banka4.stock_service.utils.AssetGenerator;
@@ -27,9 +26,6 @@ import rs.banka4.stock_service.utils.ExchangeGenerator;
 import rs.banka4.stock_service.utils.ListingGenerator;
 import rs.banka4.testlib.integration.DbEnabledTest;
 import rs.banka4.testlib.utils.JwtPlaceholders;
-
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.when;
 
 @SpringBootTest
 @DbEnabledTest

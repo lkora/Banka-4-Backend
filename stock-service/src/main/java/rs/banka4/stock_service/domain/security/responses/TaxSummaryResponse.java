@@ -6,4 +6,5 @@ public record TaxSummaryResponse(
     BigDecimal paidTaxThisYear,
     BigDecimal unpaidTaxThisMonth,
     String currency
-) {}
+) {
+}
